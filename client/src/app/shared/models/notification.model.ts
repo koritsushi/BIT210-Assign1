@@ -1,7 +1,7 @@
 export interface notification {
-    id: number,
-    user_id: number,
-    activity_id: number,
+    _id?: string,
+    user_id: string,
+    activity_id: string,
     type: string,
     message: string,
     sent_at: Date,

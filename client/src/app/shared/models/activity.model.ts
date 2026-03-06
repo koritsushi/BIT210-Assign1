@@ -1,7 +1,7 @@
 
 export interface Activity {
     _id?: string;
-    ngo_id: string
+    ngo_id: string;
     date: Date;
     start_time: number;
     end_time: number;

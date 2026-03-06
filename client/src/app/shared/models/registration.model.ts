@@ -1,5 +1,5 @@
 export interface Registration {
-    registration_id: string;
+    _id?: string;
     user_id: string;
     activity_id: string;
     registered_at: Date;

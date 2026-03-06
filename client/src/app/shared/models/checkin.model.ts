@@ -1,6 +1,6 @@
 export interface Checkin {
-    id: number,
-    registration_id: number,
+    _id?: string,
+    registration_id: string,
     checkin_time: Date,
     method: string
 }
