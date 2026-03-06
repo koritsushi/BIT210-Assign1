@@ -45,3 +45,5 @@ Thumbs.db
 
 #local file
 .env
+node_modules
+.angular
