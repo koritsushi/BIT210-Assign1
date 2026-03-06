@@ -1,8 +1,25 @@
 # BIT210Assign1
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.0.
+## Setting Up
+To setup the server node_modules
+```bash
+cd server
+npm install
+```
+To setup the client node_modules
+```bash
+cd client
+npm install
+```
 
 ## Development server
+
+To Start Backend Client
+
+```bash
+cd server
+npx ts-node src/server.ts
+```
 
 To start a local development server, run:
 
