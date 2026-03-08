@@ -1,8 +1,9 @@
 import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { Header } from './views/nav/header/header';
-import { Footer } from './views/nav/footer/footer';
-import { NavBar } from './views/nav/nav-bar/nav-bar';
+import { Router, RouterOutlet } from '@angular/router';
+import { Header } from './shared/components/header/header';
+import { Footer } from './shared/components/footer/footer';
+import { NavBar } from './shared/components/nav-bar/nav-bar';
+import { AuthService } from './services/auth.services';
 
 @Component({
   selector: 'app-root',
@@ -11,5 +12,10 @@ import { NavBar } from './views/nav/nav-bar/nav-bar';
   styleUrl: './app.css'
 })
 export class App {
-  protected readonly title = signal('client');
+  protected readonly title = signal('Service Day');
+
+  constructor(
+    public auth: AuthService,
+    private router: Router
+    ) {}
 }

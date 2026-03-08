@@ -1,1 +1,192 @@
-/* You can add global styles to this file, and also import other style files */
+/* ===== Global base ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f5f7fb;
+  color: #1f2a37;
+}
+
+/* ===== Layout ===== */
+.container {
+    min-height: 80vh;
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 18px;
+}
+
+/* ===== Topbar ===== */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #1976d2;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.footer{
+  background: #3d6bc4;
+  color: white;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.brand-title {
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.brand-subtitle {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.nav {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-link {
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.nav-link.active {
+  background: rgba(255, 255, 255, 0.28);
+  font-weight: bold;
+}
+
+/* ===== Reusable UI ===== */
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+}
+
+.card + .card {
+  margin-top: 14px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
+  border: 1px solid transparent;
+}
+
+.badge.green {
+  color: #2e7d32;
+  border-color: #2e7d32;
+}
+
+.badge.orange {
+  color: #e65100;
+  border-color: #e65100;
+}
+
+.badge.red {
+  color: #b00020;
+  border-color: #b00020;
+}
+
+.btn {
+  padding: 9px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition: transform 0.06s ease, background 0.2s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.btn.primary {
+  background: #1976d2;
+  border-color: #1976d2;
+  color: #fff;
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.btn.danger {
+  border-color: #b00020;
+  color: #b00020;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.muted {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.page-title {
+  margin: 0 0 10px 0;
+}
+
+.page-subtitle {
+  margin: 0 0 16px 0;
+}
+
+/* ===== Auth bar (top right) ===== */
+.authbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 12px;
+  flex-wrap: wrap;
+}
+
+.authtext {
+  font-size: 12px;
+  opacity: 0.95;
+}
+
+/* small button for topbar */
+.btn.small {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 10px;
+}
