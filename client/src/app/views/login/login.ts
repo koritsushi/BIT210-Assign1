@@ -27,7 +27,9 @@ export class Login {
                 this.authService.saveName(res.user.name);
                 this.authService.saveRole(res.user.role);
                 if (this.authService.getRole() === "Employee")
-                    this.router.navigate(['./dashboard']);
+                    this.router.navigate(['./employee/dashboard']);
+                else if (this.authService.getRole() === "Admin")
+                    this.router.navigate(['./admin/dashboard']);
             },
             error: () => {
                 this.error = 'Invalid Name!';
