@@ -6,7 +6,7 @@ import { User } from '../models/user.model';
   providedIn: 'root'
 })
 export class UserService {
-  private url = 'http://localhost:5200';
+  private url = 'http://localhost:3000';
   users$ = signal<User[]>([]);
   user$ = signal<User>({} as User);
   
@@ -31,7 +31,7 @@ export class UserService {
     });
   }
 
-  createUsere(user: User) {
+  createUser(user: User) {
     return this.httpClient.post(`${this.url}/users`, user, { responseType: 'text' });
   }
 
