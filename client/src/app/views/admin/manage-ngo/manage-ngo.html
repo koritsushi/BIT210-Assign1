@@ -1,1 +1,146 @@
-<p>manage-ngo works!</p>
+<h2>Manage NGO Availability</h2>
+
+<mat-card class="form-card">
+  <mat-card-header>
+    <mat-card-title>
+      {{ editingId ? 'Edit Activity' : 'Add New Activity' }}
+    </mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <form [formGroup]="form" (ngSubmit)="submit()">
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>NGO ID</mat-label>
+        <input matInput formControlName="ngo_id" placeholder="Enter NGO ID" />
+        @if (form.get('ngo_id')?.hasError('required')) {
+          <mat-error>NGO ID is required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>NGO Name</mat-label>
+        <input matInput formControlName="ngo_name" placeholder="Enter NGO Name" />
+        @if (form.get('ngo_name')?.hasError('required')) {
+          <mat-error>NGO Name is required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Location</mat-label>
+        <input matInput formControlName="location" placeholder="Enter Location" />
+        @if (form.get('location')?.hasError('required')) {
+          <mat-error>Location is required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Description</mat-label>
+        <textarea matInput rows="3" formControlName="description" placeholder="Enter Description"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Date</mat-label>
+        <input matInput type="date" formControlName="date" />
+        @if (form.get('date')?.hasError('required')) {
+          <mat-error>Date is required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Start Time</mat-label>
+        <input matInput type="time" formControlName="start_time" />
+        @if (form.get('start_time')?.hasError('required')) {
+          <mat-error>Start time is required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>End Time</mat-label>
+        <input matInput type="time" formControlName="end_time" />
+        @if (form.get('end_time')?.hasError('required')) {
+          <mat-error>End time is required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Total Slots Offered</mat-label>
+        <input matInput type="number" formControlName="max_slots" />
+        @if (form.get('max_slots')?.hasError('required')) {
+          <mat-error>Total slots is required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Cut-off Date & Time</mat-label>
+        <input matInput type="datetime-local" formControlName="cutoff_datetime" />
+        @if (form.get('cutoff_datetime')?.hasError('required')) {
+          <mat-error>Cut-off datetime is required</mat-error>
+        }
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
+        {{ editingId ? 'Update Activity' : 'Add Activity' }}
+      </button>
+
+      <button mat-stroked-button type="button" (click)="clearForm()">
+        Clear
+      </button>
+    </form>
+  </mat-card-content>
+</mat-card>
+
+<mat-card class="table-card">
+  <mat-card-header>
+    <mat-card-title>Activity List</mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <table class="activity-table">
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>NGO</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Location</th>
+        <th>Offered</th>
+        <th>Taken</th>
+        <th>Remaining</th>
+        <th>Cut-off</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+      </thead>
+
+      <tbody>
+        @for (activity of activities; track activity._id) {
+          <tr>
+            <td>{{ activity._id }}</td>
+            <td>{{ activity.ngo_name }}</td>
+            <td>{{ activity.date }}</td>
+            <td>{{ activity.start_time }} - {{ activity.end_time }}</td>
+            <td>{{ activity.location }}</td>
+            <td>{{ activity.max_slots }}</td>
+            <td>{{ activity.slots_taken ?? 0 }}</td>
+            <td>{{ getRemaining(activity) }}</td>
+            <td>{{ activity.cutoff_datetime }}</td>
+            <td>{{ activity.status }}</td>
+            <td>
+              <button mat-stroked-button color="primary" type="button" (click)="editActivity(activity)">
+                Edit
+              </button>
+              <button mat-stroked-button color="warn" type="button" (click)="deleteActivity(activity._id)">
+                Delete
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="11">No activities available.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </mat-card-content>
+</mat-card>

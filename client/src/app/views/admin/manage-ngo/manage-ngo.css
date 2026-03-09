@@ -1,0 +1,30 @@
+h2 {
+  margin-bottom: 16px;
+}
+
+.form-card,
+.table-card {
+  margin-bottom: 24px;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.activity-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.activity-table th,
+.activity-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+.activity-table th {
+  background-color: #f5f5f5;
+}
