@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { AuthService } from '../../../services/auth.services';
 
 @Component({
   selector: 'app-header',
@@ -6,4 +7,9 @@ import { Component } from '@angular/core';
   templateUrl: './header.html',
   styleUrl: './header.css',
 })
-export class Header {}
+
+export class Header {
+    constructor(
+        public auth: AuthService
+    ) {}
+}

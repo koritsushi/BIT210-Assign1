@@ -6,6 +6,7 @@ import { userRouter } from "./user.routes";
 import { activityRouter } from "./activity.routes";
 import { registrationRouter } from "./registration.routes";
 import { ngoRouter } from "./ngo.routes";
+import { authRouter } from "./auth.routes";
 
 //dotenv.config();
 //const { ATLAS_URI } = process.env;
@@ -14,6 +15,7 @@ app.use(cors());
 
 //hardcode database
 app.use(express.json());
+app.use("/auth", authRouter);
 app.use("/users", userRouter);
 app.use("/activity", activityRouter);
 app.use("/registration", registrationRouter);
