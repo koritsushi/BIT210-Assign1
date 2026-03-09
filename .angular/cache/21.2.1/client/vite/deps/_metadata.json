@@ -1,0 +1,70 @@
+{
+  "hash": "39bd4318",
+  "configHash": "b33afe40",
+  "lockfileHash": "8a6ba20c",
+  "browserHash": "74742dc3",
+  "optimized": {
+    "@angular/common": {
+      "src": "../../../../../../node_modules/@angular/common/fesm2022/common.mjs",
+      "file": "@angular_common.js",
+      "fileHash": "0b43379e",
+      "needsInterop": false
+    },
+    "@angular/common/http": {
+      "src": "../../../../../../node_modules/@angular/common/fesm2022/http.mjs",
+      "file": "@angular_common_http.js",
+      "fileHash": "52999c0f",
+      "needsInterop": false
+    },
+    "@angular/core": {
+      "src": "../../../../../../node_modules/@angular/core/fesm2022/core.mjs",
+      "file": "@angular_core.js",
+      "fileHash": "fa10a9cc",
+      "needsInterop": false
+    },
+    "@angular/forms": {
+      "src": "../../../../../../node_modules/@angular/forms/fesm2022/forms.mjs",
+      "file": "@angular_forms.js",
+      "fileHash": "d05e3684",
+      "needsInterop": false
+    },
+    "@angular/platform-browser": {
+      "src": "../../../../../../node_modules/@angular/platform-browser/fesm2022/platform-browser.mjs",
+      "file": "@angular_platform-browser.js",
+      "fileHash": "20818d7e",
+      "needsInterop": false
+    },
+    "@angular/router": {
+      "src": "../../../../../../node_modules/@angular/router/fesm2022/router.mjs",
+      "file": "@angular_router.js",
+      "fileHash": "25be174f",
+      "needsInterop": false
+    },
+    "qrcode": {
+      "src": "../../../../../../node_modules/qrcode/lib/browser.js",
+      "file": "qrcode.js",
+      "fileHash": "9b44f811",
+      "needsInterop": true
+    }
+  },
+  "chunks": {
+    "chunk-BQNPVO34": {
+      "file": "chunk-BQNPVO34.js"
+    },
+    "chunk-EVYIWCEU": {
+      "file": "chunk-EVYIWCEU.js"
+    },
+    "chunk-7WEP3GST": {
+      "file": "chunk-7WEP3GST.js"
+    },
+    "chunk-U543KBRB": {
+      "file": "chunk-U543KBRB.js"
+    },
+    "chunk-BOZNKVOU": {
+      "file": "chunk-BOZNKVOU.js"
+    },
+    "chunk-H2SRQSE4": {
+      "file": "chunk-H2SRQSE4.js"
+    }
+  }
+}

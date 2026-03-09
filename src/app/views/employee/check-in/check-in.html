@@ -1,0 +1,34 @@
+<div class="page">
+  <h2>Employee Check-In</h2>
+
+  <div class="card">
+    <label>Employee Name</label>
+    <input [(ngModel)]="employeeName" />
+
+    <label>Select Activity</label>
+    <select [(ngModel)]="selectedActivityId">
+      <option value="">-- Select Activity --</option>
+      <option *ngFor="let activity of activities()" [value]="activity._id">
+        {{ activity.activity_name }}
+      </option>
+    </select>
+
+    <label>Enter QR Code</label>
+    <input type="text" [(ngModel)]="qrInput" placeholder="Enter QR code" />
+
+    <button (click)="submitCheckIn()">Check In</button>
+
+    <p class="message">{{ message }}</p>
+  </div>
+
+  <div class="card">
+    <h3>My Check-In Records</h3>
+
+    <div *ngFor="let item of myCheckins()" class="checkin-item">
+      <p><strong>Activity:</strong> {{ item.activity_name }}</p>
+      <p><strong>Status:</strong> {{ item.status }}</p>
+      <p><strong>QR Code:</strong> {{ item.qr_code }}</p>
+      <p><strong>Check-In Time:</strong> {{ item.checkin_time || '-' }}</p>
+    </div>
+  </div>
+</div>
