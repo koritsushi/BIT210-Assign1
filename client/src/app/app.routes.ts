@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
 import { Employee } from './views/employee/employee';
-import { Admin } from './views/admin/admin';
 
 export const routes: Routes = [
     {path: '', redirectTo: 'login', pathMatch: 'full'},
@@ -13,12 +12,12 @@ export const routes: Routes = [
         path: 'admin',
         canActivate: [AuthGuard],
         data: { role: 'Admin'},
-        component: Admin,
         children: [
-            { path: '', redirectTo: 'dashboard', pathMatch: 'full'},
-            { path: 'dashboard', loadComponent: () => import('./views/admin/dashboard/dashboard').then((admin) => admin.Dashboard)},
-            { path: 'manage-ngo', loadComponent: () => import('./views/admin/manage-ngo/manage-ngo').then((admin) => admin.ManageNgo)},
-        ]
+            { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+            { path: 'dashboard', loadComponent: () => import('./views/admin/dashboard/dashboard').then((admin) => admin.Dashboard) },
+            { path: 'activity-check-in', loadComponent: () => import('./views/admin/activity-check-in/activity-check-in').then((admin) => admin.ActivityCheckIn) },
+            { path: 'send-notifications', loadComponent: () => import('./views/admin/send-notifications/send-notifications').then((admin) => admin.SendNotifications) },
+        ],
     },
     {
         path: 'employee',

@@ -3,10 +3,11 @@ import { Router, RouterOutlet } from '@angular/router';
 import { Header } from './shared/components/header/header';
 import { Footer } from './shared/components/footer/footer';
 import { AuthService } from './services/auth.services';
+import { NavBar } from './shared/components/nav-bar/nav-bar';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Header, Footer],
+  imports: [RouterOutlet, Header, NavBar, Footer],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -17,4 +18,8 @@ export class App {
     public auth: AuthService,
     private router: Router
     ) {}
+
+  isAdminArea(): boolean {
+    return this.router.url.startsWith('/admin');
+  }
 }

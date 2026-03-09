@@ -1,19 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivityCheckIn } from './activity-check-in';
 
-import { ManageNgo } from './manage-ngo';
-
-describe('ManageNgo', () => {
-  let component: ManageNgo;
-  let fixture: ComponentFixture<ManageNgo>;
+describe('ActivityCheckIn', () => {
+  let component: ActivityCheckIn;
+  let fixture: ComponentFixture<ActivityCheckIn>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ManageNgo],
+      imports: [ActivityCheckIn],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ManageNgo);
+    fixture = TestBed.createComponent(ActivityCheckIn);
     component = fixture.componentInstance;
-    await fixture.whenStable();
+    fixture.detectChanges();
   });
 
   it('should create', () => {
