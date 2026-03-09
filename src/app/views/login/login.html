@@ -1,18 +1,15 @@
-<section class="page">
-    <h2 class="title">Login</h2>
-        <div class="card">
-            <div class="row">
-                <label class="field">
-                    Name
-                    <input [(ngModel)]="name" placeholder="e.g., lorem Ipsum" />
-                </label>
-            </div>
+<div class="page">
+  <div class="card">
+    <h2>Login</h2>
 
-            <div class="actions">
-                <button class="btn primary" (click)="onLogin()">Login</button>
-            </div>
-        </div>
-        @if (error) {
-            <div class="error">{{ error }}</div>
-        }
-</section>
+    <label>Email</label>
+    <input type="text" [(ngModel)]="email" />
+
+    <label>Password</label>
+    <input type="password" [(ngModel)]="password" />
+
+    <button (click)="onLogin()">Login</button>
+
+    <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  </div>
+</div>

@@ -1,71 +1,71 @@
-import { Injectable } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
-import { Router } from "@angular/router";
+import { Injectable } from '@angular/core';
+import { Observable, of } from 'rxjs';
+
+export interface LoginResponse {
+  token: string;
+  name: string;
+  role: 'Admin' | 'Employee';
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:3000/auth';
+  private tokenKey = 'token';
+  private nameKey = 'name';
+  private roleKey = 'role';
 
-  constructor(
-    private http: HttpClient,
-    private router: Router
-  ) {}
+  login(email: string, password: string): Observable<LoginResponse> {
+    let response: LoginResponse;
 
-  login(name: string) {
-    return this.http.post<{ token: string; user: any }>(
-      `${this.apiUrl}/login`,
-      { name }
-    );
+    if (email.toLowerCase().includes('admin')) {
+      response = {
+        token: 'mock-admin-token',
+        name: 'Admin User',
+        role: 'Admin'
+      };
+    } else {
+      response = {
+        token: 'mock-employee-token',
+        name: 'Bin Hangyu',
+        role: 'Employee'
+      };
+    }
+
+    return of(response);
   }
 
   saveToken(token: string) {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('token', token);
-    }
-  }
-
-  saveName(name: string) {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('name', name);
-    }
-  }
-
-  saveRole(role: string) {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('role', role);
-    }
-  }
-
-  getName() {
-    return typeof localStorage !== 'undefined'
-      ? localStorage.getItem('name')
-      : null;
+    localStorage.setItem(this.tokenKey, token);
   }
 
   getToken() {
-    return typeof localStorage !== 'undefined'
-      ? localStorage.getItem('token')
-      : null;
+    return localStorage.getItem(this.tokenKey);
+  }
+
+  saveName(name: string) {
+    localStorage.setItem(this.nameKey, name);
+  }
+
+  getName() {
+    return localStorage.getItem(this.nameKey);
+  }
+
+  saveRole(role: string) {
+    localStorage.setItem(this.roleKey, role);
   }
 
   getRole() {
-    return typeof localStorage !== 'undefined'
-      ? localStorage.getItem('role')
-      : null;
+    return localStorage.getItem(this.roleKey);
   }
 
   isLoggedIn() {
-    return typeof localStorage !== 'undefined' && !!this.getToken();
+    return !!this.getToken();
   }
 
   logout() {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('name');
-      localStorage.removeItem('role');
-    }
-    this.router.navigate(['/login']);
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.nameKey);
+    localStorage.removeItem(this.roleKey);
   }
 }
