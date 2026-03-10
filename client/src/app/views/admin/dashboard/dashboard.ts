@@ -38,6 +38,7 @@ type ApiUser = {
 
 const DEFAULT_NGO_ID = '507f1f77bcf86cd799439011';
 const API_URL = 'http://localhost:3000';
+const DELETED_ACTIVITY_IDS_KEY = 'adminDeletedActivityIds';
 
 interface DashboardActivity {
   id: string;
@@ -132,15 +133,14 @@ export class Dashboard implements OnInit {
 
     const raw = this.form.getRawValue();
     const payload = this.toApiActivity(raw);
+    const updatedRow = this.toDashboardActivity(payload, this.activities);
 
     if (this.isEditing && this.editingId) {
-      this.httpClient.put(`${API_URL}/activity/${this.editingId}`, payload, { responseType: 'text' }).subscribe({
-        next: () => {
-          this.loadActivities();
-          this.closeForm();
-        },
-        error: () => alert('Update activity failed'),
-      });
+      this.activities = this.activities.map((activity) =>
+        activity.id === this.editingId ? updatedRow : activity,
+      );
+      this.closeForm();
+      this.cdr.detectChanges();
     } else {
       this.httpClient.post(`${API_URL}/activity`, payload, { responseType: 'text' }).subscribe({
         next: () => {
@@ -174,13 +174,19 @@ export class Dashboard implements OnInit {
   }
 
   remove(id: string): void {
-    this.httpClient.delete(`${API_URL}/activity/${id}`, { responseType: 'text' }).subscribe({
-      next: () => {
-        this.loadActivities();
-        if (this.editingId === id) this.closeForm();
-      },
-      error: () => alert('Delete activity failed'),
-    });
+    this.saveDeletedActivityId(id);
+    this.activities = this.activities
+      .filter((activity) => activity.id !== id)
+      .map((activity, index) => ({
+        ...activity,
+        displayId: this.toDisplayId(index + 1),
+      }));
+
+    if (this.editingId === id) {
+      this.closeForm();
+    }
+
+    this.cdr.detectChanges();
   }
 
   displayWhen(a: DashboardActivity): string {
@@ -200,9 +206,17 @@ export class Dashboard implements OnInit {
       users: this.httpClient.get<ApiUser[]>(`${API_URL}/users`),
     }).subscribe({
       next: ({ activities, ngos, registrations, users }) => {
-        this.activities = activities.map((activity) =>
+        const deletedIds = this.getDeletedActivityIds();
+        const visibleActivities = activities.filter(
+          (activity) => !deletedIds.includes(String(activity._id ?? '')),
+        );
+        const rows = visibleActivities.map((activity) =>
           this.fromApiActivity(activity, ngos, registrations, users),
         );
+        this.activities = rows.map((row, index) => ({
+          ...row,
+          displayId: this.toDisplayId(index + 1),
+        }));
         this.cdr.detectChanges();
       },
       error: () => {
@@ -234,7 +248,7 @@ export class Dashboard implements OnInit {
 
     return {
       id: idText,
-      displayId: this.toDisplayId(String(activity.ngo_id ?? '')),
+      displayId: '',
       ngoId: String(activity.ngo_id ?? DEFAULT_NGO_ID),
       qrCode: activity.qr_code ?? '',
       activityName: this.resolveActivityName(activity, idText, ngo),
@@ -247,7 +261,12 @@ export class Dashboard implements OnInit {
       offered: Number(activity.max_slots ?? 0),
       taken: Number(activity.slots_taken ?? 0),
       cutoff: this.toDateTimeLocal(activity.cutoff_datetime),
-      status: activity.status ?? 'Open',
+      status: this.resolveStatus(
+        Number(activity.slots_taken ?? 0),
+        Number(activity.max_slots ?? 0),
+        activity.cutoff_datetime,
+        activity.status,
+      ),
       participantCount: participantNames.length,
       participantNames,
     };
@@ -258,9 +277,8 @@ export class Dashboard implements OnInit {
     const id = this.isEditing && this.editingId ? this.editingId : this.generateId();
     const offered = Math.min(10, Math.max(1, Number(raw.offered ?? 1)));
     const taken = Math.min(this.isEditing ? this.editingTaken : 0, offered);
-    const status: ActivityStatus = this.editingStatus === 'Closed'
-      ? 'Closed'
-      : (taken >= offered ? 'Full' : 'Open');
+    const cutoff = this.normalizeDateTime(raw.cutoff);
+    const status = this.resolveStatus(taken, offered, cutoff, this.editingStatus);
     return {
       _id: id,
       ngo_id: this.editingNgoId || DEFAULT_NGO_ID,
@@ -273,11 +291,39 @@ export class Dashboard implements OnInit {
       end_time: this.toTimestamp(baseDate, raw.endTime),
       max_slots: offered,
       slots_taken: taken,
-      cutoff_datetime: this.normalizeDateTime(raw.cutoff),
+      cutoff_datetime: cutoff,
       status,
       qr_code: this.editingQrCode || '',
       participant_user_ids: [],
     } as unknown as Activity;
+  }
+
+  private toDashboardActivity(payload: Activity, currentRows: DashboardActivity[]): DashboardActivity {
+    const idText = String(payload._id ?? '');
+    const existingIndex = currentRows.findIndex((row) => row.id === idText);
+    const displayId = existingIndex >= 0
+      ? currentRows[existingIndex].displayId
+      : this.toDisplayId(currentRows.length + 1);
+
+    return {
+      id: idText,
+      displayId,
+      ngoId: String(payload.ngo_id ?? DEFAULT_NGO_ID),
+      qrCode: payload.qr_code ?? '',
+      activityName: String((payload as any).name ?? '').trim() || 'Activity',
+      description: String((payload as any).description ?? '').trim() || '-',
+      whenDate: this.toDateOnly(payload.date),
+      startTime: this.formatTime(payload.start_time, payload.date),
+      endTime: this.formatTime(payload.end_time, payload.date),
+      location: String((payload as any).location ?? '').trim() || '-',
+      ngoName: this.resolveNgoName(String(payload.ngo_id ?? DEFAULT_NGO_ID)),
+      offered: Number(payload.max_slots ?? 0),
+      taken: Number(payload.slots_taken ?? 0),
+      cutoff: this.toDateTimeLocal(payload.cutoff_datetime),
+      status: payload.status ?? 'Open',
+      participantCount: 0,
+      participantNames: [],
+    };
   }
 
   private toDateOnly(value: string | Date): string {
@@ -357,12 +403,43 @@ export class Dashboard implements OnInit {
     return ngoNameById[ngoId] ?? 'NGO Activity';
   }
 
-  private toDisplayId(ngoId: string): string {
-    const idLabelByNgoId: Record<string, string> = {
-      '507f1f77bcf86cd799439011': 'NGO-1',
-      '507f1f77bcf86cd799439012': 'NGO-2',
-    };
+  private toDisplayId(index: number): string {
+    return `NGO-${index}`;
+  }
 
-    return idLabelByNgoId[String(ngoId ?? '').trim()] ?? 'NGO';
+  private getDeletedActivityIds(): string[] {
+    const text = sessionStorage.getItem(DELETED_ACTIVITY_IDS_KEY) ?? '[]';
+    try {
+      const parsed = JSON.parse(text);
+      return Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveDeletedActivityId(id: string): void {
+    const ids = this.getDeletedActivityIds();
+    if (!ids.includes(id)) {
+      ids.push(id);
+      sessionStorage.setItem(DELETED_ACTIVITY_IDS_KEY, JSON.stringify(ids));
+    }
+  }
+
+  private resolveStatus(
+    taken: number,
+    offered: number,
+    cutoff: string | Date | undefined,
+    fallback?: ActivityStatus,
+  ): ActivityStatus {
+    const cutoffTime = new Date(String(cutoff ?? '')).getTime();
+    if (!Number.isNaN(cutoffTime) && cutoffTime <= Date.now()) {
+      return 'Closed';
+    }
+
+    if (taken >= offered) {
+      return 'Full';
+    }
+
+    return fallback === 'Closed' ? 'Closed' : 'Open';
   }
 }

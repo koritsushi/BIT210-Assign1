@@ -36,7 +36,14 @@
                 <span>{{ cutoffParts(a.cutoff).time }}</span>
               </div>
             </td>
-            <td><span class="badge">{{ a.status }}</span></td>
+            <td>
+              <span
+                class="badge"
+                [class.badge-full]="a.status === 'Full'"
+                [class.badge-closed]="a.status === 'Closed'">
+                {{ a.status }}
+              </span>
+            </td>
             <td>
               <a class="btn small participant-link" [routerLink]="['/admin/dashboard', a.id, 'participants']">
                 View<br>Participants

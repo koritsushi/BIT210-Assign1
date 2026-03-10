@@ -25,7 +25,7 @@
         <thead>
           <tr>
             <th>Name</th>
-            <th>When</th>
+            <th>Check-In Time</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -33,7 +33,7 @@
           @for (record of filteredRecords; track record.id) {
             <tr>
               <td>{{ record.name }}</td>
-              <td>{{ record.when }}</td>
+              <td>{{ record.checkInTime }}</td>
               <td>
                 <select
                   class="status-select select-field"
@@ -83,29 +83,6 @@
         <div>Attendance Rate: <strong>{{ attendanceRate }}%</strong></div>
       </div>
 
-      <h3>Employee Participation</h3>
-      <table class="report-table">
-        <thead>
-          <tr>
-            <th>Employee Name</th>
-            <th>Department</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (record of filteredRecords; track record.id) {
-            <tr>
-              <td>{{ record.name }}</td>
-              <td>{{ record.department }}</td>
-              <td>
-                <span class="status-pill" [class.absent]="record.status === 'Absent'">
-                  {{ record.status }}
-                </span>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
     </section>
   }
 </section>

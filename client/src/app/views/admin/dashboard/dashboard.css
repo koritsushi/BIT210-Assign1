@@ -138,6 +138,16 @@ td:nth-child(9) {
   text-align: center;
 }
 
+.badge-full {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.badge-closed {
+  background: #fdecea;
+  color: #c62828;
+}
+
 .actions {
   white-space: nowrap;
   display: flex;

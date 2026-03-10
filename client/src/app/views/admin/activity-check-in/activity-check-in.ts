@@ -1,10 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, effect } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { Activity } from '../../../models/activity.model';
-import { ActivityService } from '../../../services/activity.service';
 import { User } from '../../../models/user.model';
-import { UserService } from '../../../services/user.service';
 
 type CheckInStatus = 'Absent' | 'Attended';
 
@@ -12,21 +12,37 @@ interface CheckInRecord {
   id: string;
   name: string;
   department: string;
-  when: string;
+  checkInTime: string;
   status: CheckInStatus;
   activity: string;
-}
-
-interface CheckInParticipantEntry {
-  entryId: string;
-  user: User;
 }
 
 type ApiActivity = Activity & {
   ngo_name?: string;
   location?: string;
-  participant_user_ids?: string[];
+  description?: string;
 };
+
+type ApiRegistration = {
+  _id?: string;
+  user_id: string;
+  activity_id: string;
+  registered_at: Date | string;
+  updated_at: Date | string;
+  status: 'Registered' | 'Cancelled' | 'Attended';
+};
+
+type ApiNgo = {
+  _id?: string;
+  name: string;
+  description: string;
+  location: string;
+  service_type: string;
+  is_active: boolean;
+};
+
+const API_URL = 'http://localhost:3000';
+const DELETED_ACTIVITY_IDS_KEY = 'adminDeletedActivityIds';
 
 @Component({
   selector: 'app-activity-check-in',
@@ -40,38 +56,26 @@ export class ActivityCheckIn implements OnInit {
   generatedActivityName: string | null = null;
 
   activityOptions: string[] = [];
-
   records: CheckInRecord[] = [];
-
   showReport = false;
 
   private readonly activityMeta: Record<string, { date: string; location: string }> = {};
-
   private readonly activityIdMap: Record<string, string> = {};
   private readonly activityQrIndexMap: Record<string, string> = {};
   private readonly checkInStatusMap: Record<string, CheckInStatus> = {};
 
   constructor(
-    private activityService: ActivityService,
-    private userService: UserService,
-  ) {
-    effect(() => {
-      const activities = this.activityService.activities$() as ApiActivity[];
-      const users = this.userService.users$();
-
-      this.applyActivityOptions(activities);
-      this.buildCheckInRecords(activities, users);
-    });
-  }
+    private httpClient: HttpClient,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
-    this.records = [];
-    this.loadActivitiesAndUsers();
+    this.loadCheckInData();
   }
 
   get filteredRecords(): CheckInRecord[] {
     if (!this.selectedActivity) return this.records;
-    return this.records.filter((r) => r.activity === this.selectedActivity);
+    return this.records.filter((record) => record.activity === this.selectedActivity);
   }
 
   generateReport(): void {
@@ -81,9 +85,8 @@ export class ActivityCheckIn implements OnInit {
   generateQrCode(): void {
     const activityId = this.activityIdMap[this.selectedActivity];
     if (!activityId) return;
-    this.generatedActivityId = activityId;
+    this.generatedActivityId = this.activityQrIndexMap[this.selectedActivity] ?? null;
     this.generatedActivityName = this.selectedActivity;
-    alert(`QR Code\nActivity ID: ${activityId}\nGenerated successfully`);
   }
 
   get reportActivityName(): string {
@@ -103,11 +106,11 @@ export class ActivityCheckIn implements OnInit {
   }
 
   get attendedCount(): number {
-    return this.filteredRecords.filter((r) => r.status === 'Attended').length;
+    return this.filteredRecords.filter((record) => record.status === 'Attended').length;
   }
 
   get absentCount(): number {
-    return this.filteredRecords.filter((r) => r.status === 'Absent').length;
+    return this.filteredRecords.filter((record) => record.status === 'Absent').length;
   }
 
   get attendanceRate(): number {
@@ -124,7 +127,7 @@ export class ActivityCheckIn implements OnInit {
     const indexText = this.qrCodeNumber;
     const numericId = Number(indexText);
     if (!Number.isInteger(numericId) || numericId < 1 || numericId > 10) return '';
-    return `/qrcodes/${indexText}.png`;
+    return `/qrcodes/${numericId}.png`;
   }
 
   get hasQrImage(): boolean {
@@ -137,141 +140,145 @@ export class ActivityCheckIn implements OnInit {
 
   onStatusChange(recordId: string, status: CheckInStatus): void {
     this.checkInStatusMap[recordId] = status;
+    const record = this.records.find((item) => item.id === recordId);
+    if (record) {
+      record.status = status;
+      if (status === 'Attended') {
+        record.checkInTime = this.formatDateTime(new Date());
+      }
+    }
   }
 
-  private loadActivitiesAndUsers(): void {
-    this.activityService.getActivities();
-    this.userService.getUsers();
+  private loadCheckInData(): void {
+    forkJoin({
+      activities: this.httpClient.get<ApiActivity[]>(`${API_URL}/activity`),
+      registrations: this.httpClient.get<ApiRegistration[]>(`${API_URL}/registration`),
+      users: this.httpClient.get<User[]>(`${API_URL}/users`),
+      ngos: this.httpClient.get<ApiNgo[]>(`${API_URL}/ngo`),
+    }).subscribe({
+      next: ({ activities, registrations, users, ngos }) => {
+        const deletedIds = this.getDeletedActivityIds();
+        const visibleActivities = activities.filter(
+          (activity) => !deletedIds.includes(String(activity._id ?? '')),
+        );
+        const visibleRegistrations = registrations.filter(
+          (registration) => !deletedIds.includes(String(registration.activity_id ?? '')),
+        );
+        this.applyActivityOptions(visibleActivities, ngos);
+        this.buildCheckInRecords(visibleActivities, visibleRegistrations, users);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.activityOptions = [];
+        this.records = [];
+        this.cdr.detectChanges();
+      },
+    });
   }
 
-  private applyActivityOptions(activities: ApiActivity[]): void {
+  private applyActivityOptions(activities: ApiActivity[], ngos: ApiNgo[]): void {
     for (const key of Object.keys(this.activityIdMap)) delete this.activityIdMap[key];
     for (const key of Object.keys(this.activityQrIndexMap)) delete this.activityQrIndexMap[key];
     for (const key of Object.keys(this.activityMeta)) delete this.activityMeta[key];
 
-    const names = activities.map((a) => this.toActivityName(a));
-    this.activityOptions = [...new Set(names)];
+    this.activityOptions = activities.map((activity) => this.toActivityName(activity, ngos));
 
-    for (let i = 0; i < activities.length; i += 1) {
-      const activity = activities[i];
-      const name = this.toActivityName(activity);
+    activities.forEach((activity, index) => {
+      const name = this.toActivityName(activity, ngos);
       const id = String(activity._id ?? '').trim();
       if (name && id) this.activityIdMap[name] = id;
-      if (name) this.activityQrIndexMap[name] = String((i % 10) + 1);
+      if (name) this.activityQrIndexMap[name] = String(index + 1);
       if (name) {
         this.activityMeta[name] = {
           date: this.formatActivityDate(activity),
-          location: String(activity.location ?? 'N/A'),
+          location: this.resolveActivityLocation(activity, ngos),
         };
       }
-    }
+    });
 
     if (!this.selectedActivity || !this.activityOptions.includes(this.selectedActivity)) {
       this.selectedActivity = this.activityOptions[0] ?? '';
     }
   }
 
-  private buildCheckInRecords(activities: ApiActivity[], users: User[]): void {
-    const userMap: Record<string, User> = {};
-    for (const user of users) {
-      const id = String(user._id ?? '').trim();
-      if (id) userMap[id] = user;
-    }
-
-    const nextRecords: CheckInRecord[] = [];
-    for (const activity of activities) {
-      const activityName = this.toActivityName(activity);
-      const participants = this.resolveParticipants(activity, users, userMap);
-      for (const participant of participants) {
-        const recordId = `${activity._id}-${participant.entryId}`;
-        const previousStatus = this.checkInStatusMap[recordId] ?? 'Absent';
-        this.checkInStatusMap[recordId] = previousStatus;
-        nextRecords.push({
-          id: recordId,
-          name: participant.user.name,
-          department: participant.user.department,
-          when: this.formatActivityWhen(activity),
-          status: previousStatus,
-          activity: activityName,
-        });
-      }
-    }
-
-    this.records = nextRecords;
-  }
-
-  private resolveParticipants(
-    activity: ApiActivity,
+  private buildCheckInRecords(
+    activities: ApiActivity[],
+    registrations: ApiRegistration[],
     users: User[],
-    userMap: Record<string, User>,
-  ): CheckInParticipantEntry[] {
-    const maxAllowed = 10;
-    const targetCount = Math.min(Number(activity.slots_taken ?? 0), maxAllowed, users.length);
-    if (targetCount <= 0) return [];
+  ): void {
+    const activityMap = new Map<string, ApiActivity>();
+    activities.forEach((activity) => activityMap.set(String(activity._id ?? ''), activity));
 
-    const explicit = (activity.participant_user_ids ?? [])
-      .map((id) => String(id))
-      .filter((id, idx, arr) => arr.indexOf(id) === idx)
-      .filter((id) => !!userMap[id]);
+    const userMap = new Map<string, User>();
+    users.forEach((user) => userMap.set(String(user._id ?? ''), user));
 
-    const selectedIds: string[] = [];
-    for (const id of explicit) {
-      if (selectedIds.length >= targetCount) break;
-      selectedIds.push(id);
-    }
+    this.records = registrations
+      .filter((registration) => registration.status !== 'Cancelled')
+      .map((registration) => {
+        const activity = activityMap.get(String(registration.activity_id ?? ''));
+        const user = userMap.get(String(registration.user_id ?? ''));
+        if (!activity || !user) return null;
 
-    if (selectedIds.length < targetCount) {
-      for (const user of users) {
-        const id = String(user._id ?? '');
-        if (!id || selectedIds.includes(id)) continue;
-        selectedIds.push(id);
-        if (selectedIds.length >= targetCount) break;
-      }
-    }
+        const recordId = String(registration._id ?? `${registration.activity_id}-${registration.user_id}`);
+        const currentStatus = this.checkInStatusMap[recordId]
+          ?? (registration.status === 'Attended' ? 'Attended' : 'Absent');
+        this.checkInStatusMap[recordId] = currentStatus;
 
-    return selectedIds.map((id) => ({
-      entryId: id,
-      user: userMap[id],
-    }));
+        return {
+          id: recordId,
+          name: user.name,
+          department: user.department,
+          checkInTime: this.formatDateTime(registration.updated_at || registration.registered_at),
+          status: currentStatus,
+          activity: this.activityOptions.find((name) => this.activityIdMap[name] === String(activity._id ?? '')) ?? 'Activity',
+        } satisfies CheckInRecord;
+      })
+      .filter((record): record is CheckInRecord => !!record);
   }
 
-  private formatActivityWhen(activity: ApiActivity): string {
-    const dateText = String(activity.date ?? '').split('T')[0] ?? '';
-    let timeText = '';
-    if (typeof activity.start_time === 'number') {
-      timeText = new Date(activity.start_time).toTimeString().slice(0, 5);
-    } else {
-      timeText = String(activity.start_time ?? '').slice(0, 5);
-    }
-    return `${dateText} ${timeText}`.trim();
-  }
-
-  private formatActivityDate(activity: ApiActivity): string {
-    const rawDate = String(activity.date ?? '').split('T')[0] ?? '';
-    if (!rawDate) return 'N/A';
-
-    const parsed = new Date(rawDate);
-    if (Number.isNaN(parsed.getTime())) return rawDate;
-
-    return parsed.toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  }
-
-  private toActivityName(activity: ApiActivity): string {
+  private toActivityName(activity: ApiActivity, ngos: ApiNgo[]): string {
     const activityName = String(activity.name ?? '').trim();
     if (activityName) return activityName;
 
     const ngoName = String(activity.ngo_name ?? '').trim();
     if (ngoName) return ngoName;
 
-    const ngoId = String(activity.ngo_id ?? '');
-    const ngoNameById: Record<string, string> = {
-      '507f1f77bcf86cd799439011': 'Beach Cleaning',
-      '507f1f77bcf86cd799439012': 'Food Bank Packing',
-    };
-    return ngoNameById[ngoId] ?? `Activity ${String(activity._id ?? '').slice(-4)}`;
+    const ngo = ngos.find((item) => String(item._id ?? '') === String(activity.ngo_id ?? ''));
+    if (ngo?.name) return ngo.name;
+
+    return `Activity ${String(activity._id ?? '').slice(-4)}`;
+  }
+
+  private resolveActivityLocation(activity: ApiActivity, ngos: ApiNgo[]): string {
+    const location = String(activity.location ?? '').trim();
+    if (location) return location;
+
+    const ngo = ngos.find((item) => String(item._id ?? '') === String(activity.ngo_id ?? ''));
+    return ngo?.location ?? 'N/A';
+  }
+
+  private formatActivityDate(activity: ApiActivity): string {
+    const rawDate = String(activity.date ?? '').split('T')[0] ?? '';
+    if (!rawDate) return 'N/A';
+    return rawDate;
+  }
+
+  private formatDateTime(value: string | Date): string {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return String(value ?? '');
+
+    const date = parsed.toISOString().slice(0, 10);
+    const time = parsed.toTimeString().slice(0, 5);
+    return `${date} ${time}`;
+  }
+
+  private getDeletedActivityIds(): string[] {
+    const text = sessionStorage.getItem(DELETED_ACTIVITY_IDS_KEY) ?? '[]';
+    try {
+      const parsed = JSON.parse(text);
+      return Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
+    } catch {
+      return [];
+    }
   }
 }
