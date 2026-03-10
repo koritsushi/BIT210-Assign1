@@ -13,5 +13,7 @@ export interface Notification {
     is_read: boolean;               // track if employee has read it
     is_broadcast: boolean;          // true = sent to all employees
     sent_at: Date;
-    scheduled_at: Date;  
+    scheduled_at: Date | null;
+    repeat_intervel_minutes: number | null,
+    repeat_until: Date | null;
 }

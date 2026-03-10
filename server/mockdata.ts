@@ -74,6 +74,8 @@ export const mockNotifications: Notification[] = [
         is_broadcast: false,
         sent_at: new Date("2026-03-01T10:00:00"),
         scheduled_at: new Date("2026-03-01T10:00:00"),
+        repeat_intervel_minutes: 0,
+        repeat_until: new Date("2026-03-01T10:00:00")
     },
 
     // --- Cancellation notification ---
@@ -87,6 +89,8 @@ export const mockNotifications: Notification[] = [
         is_broadcast: false,
         sent_at: new Date("2026-03-05T09:00:00"),
         scheduled_at: new Date("2026-03-05T09:00:00"),
+        repeat_intervel_minutes: 0,
+        repeat_until: new Date("2026-03-05T09:00:00"),
     },
 
     // --- Scheduled reminder — 1 week before ---
@@ -100,6 +104,8 @@ export const mockNotifications: Notification[] = [
         is_broadcast: false,
         sent_at: new Date("2026-04-03T08:00:00"),
         scheduled_at: new Date("2026-04-03T08:00:00"),
+        repeat_intervel_minutes: 0,
+        repeat_until: new Date("2026-03-05T09:00:00"),
     },
 
     // --- Scheduled reminder — 3 days before ---
@@ -113,6 +119,8 @@ export const mockNotifications: Notification[] = [
         is_broadcast: false,
         sent_at: new Date("2026-04-07T08:00:00"),
         scheduled_at: new Date("2026-04-07T08:00:00"),
+        repeat_intervel_minutes: 0,
+        repeat_until: new Date("2026-03-07T08:00:00"),
     },
 
     // --- Scheduled reminder — 1 day before ---
@@ -126,6 +134,8 @@ export const mockNotifications: Notification[] = [
         is_broadcast: false,
         sent_at: new Date("2026-04-09T08:00:00"),
         scheduled_at: new Date("2026-04-09T08:00:00"),
+        repeat_intervel_minutes: 0,
+        repeat_until: new Date("2026-04-09T08:00:00"),
     },
 
     // --- Activity update ---
@@ -139,6 +149,8 @@ export const mockNotifications: Notification[] = [
         is_broadcast: false,
         sent_at: new Date("2026-03-15T14:00:00"),
         scheduled_at: new Date("2026-03-15T14:00:00"),
+        repeat_intervel_minutes: null,
+        repeat_until: null
     },
 
     // --- Urgent update — last available slots ---
@@ -152,6 +164,8 @@ export const mockNotifications: Notification[] = [
         is_broadcast: false,
         sent_at: new Date("2026-03-20T10:00:00"),
         scheduled_at: new Date("2026-03-20T10:00:00"),
+        repeat_intervel_minutes: null,
+        repeat_until: null
     },
 
     // --- Admin broadcast to all employees ---
@@ -165,5 +179,7 @@ export const mockNotifications: Notification[] = [
         is_broadcast: true,
         sent_at: new Date("2026-03-01T09:00:00"),
         scheduled_at: new Date("2026-03-01T09:00:00"),
+        repeat_intervel_minutes: null,
+        repeat_until: null
     },
 ]
