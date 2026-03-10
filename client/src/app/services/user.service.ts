@@ -6,7 +6,8 @@ import { User } from '../models/user.model';
   providedIn: 'root'
 })
 export class UserService {
-  private url = 'http://localhost:3000';
+  //private url = 'http://localhost:3000';
+    private url = '';
   users$ = signal<User[]>([]);
   user$ = signal<User>({} as User);
   

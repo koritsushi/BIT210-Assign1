@@ -6,7 +6,8 @@ import { Activity } from '../models/activity.model';
   providedIn: 'root'
 })
 export class ActivityService {
-  private url = 'http://localhost:3000';
+  //private url = 'http://localhost:3000';
+   private url = '';
   activities$ = signal<Activity[]>([]);
   activity$ = signal<Activity>({} as Activity);
   

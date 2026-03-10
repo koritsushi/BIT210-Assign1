@@ -6,7 +6,8 @@ import { Ngo } from '../models/ngo.model';
   providedIn: 'root'
 })
 export class NgoService {
-  private url = 'http://localhost:3000';
+  //private url = 'http://localhost:3000';
+  private url = '';
   ngos$ = signal<Ngo[]>([]);
   ngo$ = signal<Ngo>({} as Ngo);
   

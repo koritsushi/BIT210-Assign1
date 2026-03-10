@@ -27,13 +27,8 @@
             "styles": [
               "src/styles.css"
             ],
-            "server": "src/main.server.ts",
-            "outputMode": "server",
             "security": {
               "allowedHosts": []
-            },
-            "ssr": {
-              "entry": "src/server.ts"
             }
           },
           "configurations": {
@@ -61,16 +56,19 @@
           "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular/build:dev-server",
-          "configurations": {
-            "production": {
-              "buildTarget": "client:build:production"
+            "options": {
+                "proxyConfig": "proxy.conf.json"
             },
-            "development": {
-              "buildTarget": "client:build:development"
-            }
-          },
-          "defaultConfiguration": "development"
+            "builder": "@angular/build:dev-server",
+            "configurations": {
+                "production": {
+                    "buildTarget": "client:build:production"
+                },
+                "development": {
+                    "buildTarget": "client:build:development"
+                }
+            },
+            "defaultConfiguration": "development"
         },
         "test": {
           "builder": "@angular/build:unit-test"

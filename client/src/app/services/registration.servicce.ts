@@ -6,7 +6,8 @@ import { Registration } from '../models/registration.model';
   providedIn: 'root'
 })
 export class RegistrationService {
-  private url = 'http://localhost:3000';
+  //private url = 'http://localhost:3000';
+    private url = '';
   registrations$ = signal<Registration[]>([]);
   registration$ = signal<Registration>({} as Registration);
   
