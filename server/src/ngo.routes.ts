@@ -26,7 +26,7 @@ ngoRouter.get("/:id", async(req, res) => {
         if (ngo) {
             res.status(200).send(ngo);
         } else {
-            res.status(404).send(`Failed to find an employee: ID: ${id}`);
+            res.status(404).send(`Failed to find an Ngo: ID: ${id}`);
         }
     } catch (error) {
         res.status(500).send(error instanceof Error ? 
@@ -40,9 +40,9 @@ ngoRouter.post("/", async (req, res) => {
         const result = await collections?.ngos?.insertOne(ngo);
 
         if (result?.acknowledged) {
-            res.status(201).send(`Created a new user: ID ${result.insertedId}.`);
+            res.status(201).send(`Created a new Ngo: ID ${result.insertedId}.`);
         } else {
-            res.status(500).send("Failed to create a new user.");
+            res.status(500).send("Failed to create a new Ngo.");
         }
     } catch (error) {
         console.error(error);
@@ -58,11 +58,11 @@ ngoRouter.put("/:id", async (req, res) => {
         const result = await collections?.ngos?.updateOne(query, { $set: ngo });
 
         if (result && result.matchedCount) {
-            res.status(200).send(`Updated an employee: ID ${id}.`);
+            res.status(200).send(`Updated an Ngo: ID ${id}.`);
         } else if (!result?.matchedCount) {
-            res.status(404).send(`Failed to find an employee: ID ${id}`);
+            res.status(404).send(`Failed to find an Ngo: ID ${id}`);
         } else {
-            res.status(304).send(`Failed to update an employee: ID ${id}`);
+            res.status(304).send(`Failed to update an Ngo: ID ${id}`);
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
@@ -78,11 +78,11 @@ ngoRouter.delete("/:id", async (req, res) => {
         const result = await collections?.ngos?.deleteOne(query);
 
         if (result && result.deletedCount) {
-            res.status(202).send(`Removed an employee: ID ${id}`);
+            res.status(202).send(`Removed an Ngo: ID ${id}`);
         } else if (!result) {
-            res.status(400).send(`Failed to remove an employee: ID ${id}`);
+            res.status(400).send(`Failed to remove an Ngo: ID ${id}`);
         } else if (!result.deletedCount) {
-            res.status(404).send(`Failed to find an employee: ID ${id}`);
+            res.status(404).send(`Failed to find an Ngo: ID ${id}`);
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";

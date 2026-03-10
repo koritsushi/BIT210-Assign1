@@ -3,6 +3,7 @@ import * as mongodb from "mongodb";
 export interface Activity {
     _id?: mongodb.ObjectId | number;
     ngo_id: mongodb.ObjectId | number;
+    name: string,
     date: Date;
     start_time: number;
     end_time: number;

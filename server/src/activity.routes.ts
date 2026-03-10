@@ -26,7 +26,7 @@ activityRouter.get("/:id", async(req, res) => {
         if (activity) {
             res.status(200).send(activity);
         } else {
-            res.status(404).send(`Failed to find an employee: ID: ${id}`);
+            res.status(404).send(`Failed to find an activity: ID: ${id}`);
         }
     } catch (error) {
         res.status(500).send(error instanceof Error ? 
@@ -40,9 +40,9 @@ activityRouter.post("/", async (req, res) => {
         const result = await collections?.activites?.insertOne(activity);
 
         if (result?.acknowledged) {
-            res.status(201).send(`Created a new user: ID ${result.insertedId}.`);
+            res.status(201).send(`Created a new activity: ID ${result.insertedId}.`);
         } else {
-            res.status(500).send("Failed to create a new user.");
+            res.status(500).send("Failed to create a new activity.");
         }
     } catch (error) {
         console.error(error);
@@ -58,11 +58,11 @@ activityRouter.put("/:id", async (req, res) => {
         const result = await collections?.activites?.updateOne(query, { $set: activity });
 
         if (result && result.matchedCount) {
-            res.status(200).send(`Updated an employee: ID ${id}.`);
+            res.status(200).send(`Updated an activity: ID ${id}.`);
         } else if (!result?.matchedCount) {
-            res.status(404).send(`Failed to find an employee: ID ${id}`);
+            res.status(404).send(`Failed to find an activity: ID ${id}`);
         } else {
-            res.status(304).send(`Failed to update an employee: ID ${id}`);
+            res.status(304).send(`Failed to update an activity: ID ${id}`);
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
@@ -78,11 +78,11 @@ activityRouter.delete("/:id", async (req, res) => {
         const result = await collections?.activites?.deleteOne(query);
 
         if (result && result.deletedCount) {
-            res.status(202).send(`Removed an employee: ID ${id}`);
+            res.status(202).send(`Removed an activity: ID ${id}`);
         } else if (!result) {
-            res.status(400).send(`Failed to remove an employee: ID ${id}`);
+            res.status(400).send(`Failed to remove an activity: ID ${id}`);
         } else if (!result.deletedCount) {
-            res.status(404).send(`Failed to find an employee: ID ${id}`);
+            res.status(404).send(`Failed to find an activity: ID ${id}`);
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";

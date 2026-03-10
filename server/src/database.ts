@@ -146,13 +146,20 @@ class MockCollection<T> {
     }
 
     async insertOne(doc: T) {
-        this.data.push(doc);
-        return { insertedId: (doc as any)._id };
+       const newDoc = { 
+            _id: new mongodb.ObjectId(), //auto generate _id
+            ...(doc as any) 
+        };
+        this.data.push(newDoc as T);
+        return { 
+            acknowledged: true,          //route checks this
+            insertedId: (newDoc as any)._id 
+        };
     }
 
     async updateOne(filter: Partial<T>, update: { $set: Partial<T> }) {
         const index = this.data.findIndex(item =>
-            Object.entries(filter).every(([k, v]) => (item as any)[k] === v)
+            Object.entries(filter).every(([k, v]) => (item as any)[k]?.toString() === v?.toString())
         );
         if (index !== -1) {
             this.data[index] = { ...this.data[index], ...update.$set };
@@ -162,7 +169,7 @@ class MockCollection<T> {
 
     async deleteOne(filter: Partial<T>) { 
         const index = this.data.findIndex(item =>
-        Object.entries(filter).every(([k, v]) => (item as any)[k] === v)
+        Object.entries(filter).every(([k, v]) => (item as any)[k]?.toString() === v?.toString())
         );
         if (index !== -1) this.data.splice(index, 1);
         return { deletedCount: index !== -1 ? 1 : 0 };
