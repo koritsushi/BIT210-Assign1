@@ -2,6 +2,7 @@
 export interface Activity {
     _id?: string;
     ngo_id: string;
+    name: string,
     date: Date;
     start_time: number;
     end_time: number;

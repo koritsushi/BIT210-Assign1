@@ -20,6 +20,11 @@ export class AuthService {
             (`${this.apiUrl}/login`, {name});
     }
 
+    saveUserId(id: string)
+    {
+        localStorage.setItem('id', id);
+    }
+
     saveToken(token: string)
     {
         localStorage.setItem('token', token);
@@ -33,6 +38,11 @@ export class AuthService {
     saveRole(role: string)
     {
         localStorage.setItem('role', role);
+    }
+
+    getUserId()
+    {
+        return localStorage.getItem('id');
     }
 
     getToken() {
@@ -53,6 +63,9 @@ export class AuthService {
 
     logOut() {
         localStorage.removeItem(`token`);
+        localStorage.removeItem(`id`);
+        localStorage.removeItem(`Name`);
+        localStorage.removeItem(`role`);
         this.router.navigate(['/login']);
     }
 }
