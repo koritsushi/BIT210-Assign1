@@ -31,11 +31,11 @@ export class NotificationService {
     }
 
     createNotification(notification: Notification) {
-        return this.httpClient.post(`/registration`, notification, { responseType: 'text' });
+        return this.httpClient.post(`/notification`, notification, { responseType: 'text' });
     }
 
     updateNotification(id: string, notification: Notification) {
-        return this.httpClient.put(`/registration/${id}`, notification, { responseType: 'text' });
+        return this.httpClient.put(`/notification/${id}`, notification, { responseType: 'text' });
     }
 
     deleteNotification(id: string) {

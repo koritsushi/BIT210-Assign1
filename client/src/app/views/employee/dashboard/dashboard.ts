@@ -3,9 +3,11 @@ import { CommonModule } from '@angular/common';
 import { ActivityService } from '../../../services/activity.service';
 import { NgoService } from '../../../services/ngo.service';
 import { RegistrationService } from '../../../services/registration.servicce';
+import { NotificationService } from '../../../services/notification.service';
 import { Ngo } from '../../../models/ngo.model';
 import { Activity } from '../../../models/activity.model';
 import { Registration } from '../../../models/registration.model';
+import { Notification } from '../../../models/notification.model';
 import { AuthService } from '../../../services/auth.services';
 
 @Component({
@@ -21,6 +23,7 @@ export class Dashboard implements OnInit {
     private ngoService = inject(NgoService);
     private registrationService = inject(RegistrationService);
     private authService = inject(AuthService);
+    private notificationService = inject(NotificationService);
 
     // --- Signals from services ---
     activities = this.activityService.activities$;
@@ -74,24 +77,30 @@ export class Dashboard implements OnInit {
     // --- Action: Register ---
     register(activity: Activity) {
         const userId = this.authService.getUserId();
-        if (!userId) 
+        if (!userId) {
+            this.alert.unshift('Unable to register: user not found');
             return console.log("user not found or NULL!");
+        }
 
         const newRegistration: Registration = {
             user_id: userId,
             activity_id: activity._id!,
             registered_at: new Date(),
             updated_at: new Date(),
-            status: 'Registered'  // matches Registration model
+            status: 'Registered'
         };
 
         this.registrationService.createRegistration(newRegistration).subscribe({
-        next: () => {
-            this.registrationService.getRegistrations();
-            this.activityService.getActivities();
-            this.alert.unshift(`Registered for "${activity.name}"`);
-        },
-        error: () => this.alert.unshift(`Failed to register for "${activity.name}"`)
+            next: () => {
+                this.registrationService.getRegistrations();
+                this.activityService.getActivities();
+                const message = `Successfully registered for "${activity.name}"`;
+                this.alert.unshift(message);
+                this.sendNotification(userId, activity._id!, 'Registration', message);
+            },
+            error: () => {
+                this.alert.unshift(`Failed to register for "${activity.name}"`);
+            }
         });
     }
 
@@ -100,13 +109,20 @@ export class Dashboard implements OnInit {
         const registration = this.getRegistration(activity._id);
         if (!registration?._id) return;
 
+        const userId = this.authService.getUserId();
+        if (!userId) return;
+
         this.registrationService.deleteRegistration(registration._id.toString()).subscribe({
-        next: () => {
-            this.registrationService.getRegistrations();
-            this.activityService.getActivities();
-            this.alert.unshift(`Cancelled registration for "${activity.name}"`);
-        },
-        error: () => this.alert.unshift(`Failed to cancel "${activity.name}"`)
+            next: () => {
+                this.registrationService.getRegistrations();
+                this.activityService.getActivities();
+                const message = `Cancelled registration for "${activity.name}"`;
+                this.alert.unshift(message);
+                this.sendNotification(userId, activity._id!, 'Cancellation', message);
+            },
+            error: () => {
+                this.alert.unshift(`Failed to cancel "${activity.name}"`);
+            }
         });
     }
 
@@ -120,10 +136,43 @@ export class Dashboard implements OnInit {
     swapTo(activity: Activity) {
         if (!this.currentSwapActivity) return;
         const from = this.currentSwapActivity;
-        this.cancel(from);
-        this.register(activity);
-        this.alert.unshift(`Swapped from "${from.name}" to "${activity.name}"`);
-        this.currentSwapActivity = null;
+        
+        const registration = this.getRegistration(from._id);
+        if (!registration?._id) return;
+
+        const userId = this.authService.getUserId();
+        if (!userId) return;
+
+        // First cancel the old registration
+        this.registrationService.deleteRegistration(registration._id.toString()).subscribe({
+            next: () => {
+                // Then register for the new activity
+                const newRegistration: Registration = {
+                    user_id: userId,
+                    activity_id: activity._id!,
+                    registered_at: new Date(),
+                    updated_at: new Date(),
+                    status: 'Registered'
+                };
+
+                this.registrationService.createRegistration(newRegistration).subscribe({
+                    next: () => {
+                        this.registrationService.getRegistrations();
+                        this.activityService.getActivities();
+                        const message = `Swapped from "${from.name}" to "${activity.name}"`;
+                        this.alert.unshift(message);
+                        this.sendNotification(userId, activity._id!, 'Update', message);
+                        this.currentSwapActivity = null;
+                    },
+                    error: () => {
+                        this.alert.unshift(`Failed to swap to "${activity.name}"`);
+                    }
+                });
+            },
+            error: () => {
+                this.alert.unshift(`Failed to cancel "${from.name}" during swap`);
+            }
+        });
     }
 
     // --- Swap eligibility check ---
@@ -134,5 +183,28 @@ export class Dashboard implements OnInit {
         this.getRemainingSlots(activity) > 0 &&
         !this.isRegistered(activity._id) &&
         !this.isCutoffPassed(activity);
+    }
+
+    // --- Helper: Send notification ---
+    private sendNotification(
+        userId: string, 
+        activityId: string, 
+        type: "Registration" | "Cancellation" | "Reminder" | "Update" | "Broadcast", 
+        message: string
+    ) {
+        const notification: Notification = {
+            user_id: userId,
+            activity_id: activityId,
+            type: type,
+            message: message,
+            sent_at: new Date(),
+            scheduled_at: new Date()
+        };
+
+        this.notificationService.createNotification(notification).subscribe({
+            error: (err) => {
+                console.error('Failed to create notification:', err);
+            }
+        });
     }
 }

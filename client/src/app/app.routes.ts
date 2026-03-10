@@ -27,7 +27,7 @@ export const routes: Routes = [
         component: Employee,
          children: [
             { path: 'dashboard', loadComponent: () => import('./views/employee/dashboard/dashboard').then((employee) => employee.Dashboard)},
-            { path: 'notification', loadComponent: () => import('./views/employee/notification/notification').then((employee) => employee.Notification)},
+            { path: 'notification', loadComponent: () => import('./views/employee/notification/notification').then((employee) => employee.NotificationComponent)},
             { path: '', redirectTo: 'dashboard', pathMatch: 'full'}
         ]
     },
