@@ -1,5 +1,5 @@
 export interface Activity {
-  _id?: string;
+  _id: string;
   ngo_id: string;
   ngo_name?: string;
   location?: string;
@@ -12,4 +12,5 @@ export interface Activity {
   cutoff_datetime: string | Date;
   status: 'Open' | 'Full' | 'Closed';
   qr_code: string;
+  participant_user_ids?: string[];
 }
