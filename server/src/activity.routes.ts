@@ -39,7 +39,7 @@ activityRouter.post("/", async (req, res) => {
         const activity = req.body;
         const result = await collections?.activites?.insertOne(activity);
 
-        if (result?.acknowledged) {
+        if (result?.acknowledged || result?.insertedId) {
             res.status(201).send(`Created a new user: ID ${result.insertedId}.`);
         } else {
             res.status(500).send("Failed to create a new user.");

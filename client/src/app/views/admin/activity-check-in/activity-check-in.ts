@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Activity } from '../../../models/activity.model';
 import { ActivityService } from '../../../services/activity.service';
@@ -22,6 +22,12 @@ interface CheckInParticipantEntry {
   user: User;
 }
 
+type ApiActivity = Activity & {
+  ngo_name?: string;
+  location?: string;
+  participant_user_ids?: string[];
+};
+
 @Component({
   selector: 'app-activity-check-in',
   imports: [CommonModule, FormsModule],
@@ -39,11 +45,7 @@ export class ActivityCheckIn implements OnInit {
 
   showReport = false;
 
-  private readonly activityMeta: Record<string, { date: string; location: string }> = {
-    'Beach Cleaning': { date: '20 March 2026', location: 'Port Klang Beach' },
-    'Food Bank Packing': { date: '22 March 2026', location: 'PJ Community Center' },
-    'Campus Tree Planting': { date: '28 March 2026', location: 'HELP University' },
-  };
+  private readonly activityMeta: Record<string, { date: string; location: string }> = {};
 
   private readonly activityIdMap: Record<string, string> = {};
   private readonly activityQrIndexMap: Record<string, string> = {};
@@ -52,7 +54,15 @@ export class ActivityCheckIn implements OnInit {
   constructor(
     private activityService: ActivityService,
     private userService: UserService,
-  ) {}
+  ) {
+    effect(() => {
+      const activities = this.activityService.activities$() as ApiActivity[];
+      const users = this.userService.users$();
+
+      this.applyActivityOptions(activities);
+      this.buildCheckInRecords(activities, users);
+    });
+  }
 
   ngOnInit(): void {
     this.records = [];
@@ -130,29 +140,14 @@ export class ActivityCheckIn implements OnInit {
   }
 
   private loadActivitiesAndUsers(): void {
-    this.activityService.getActivities().subscribe({
-      next: (activities) => {
-        this.userService.getUsers().subscribe({
-          next: (users) => {
-            this.applyActivityOptions(activities);
-            this.buildCheckInRecords(activities, users);
-          },
-          error: () => {
-            this.records = [];
-          },
-        });
-      },
-      error: () => {
-        this.activityOptions = [];
-        this.selectedActivity = '';
-        this.records = [];
-      },
-    });
+    this.activityService.getActivities();
+    this.userService.getUsers();
   }
 
-  private applyActivityOptions(activities: Activity[]): void {
+  private applyActivityOptions(activities: ApiActivity[]): void {
     for (const key of Object.keys(this.activityIdMap)) delete this.activityIdMap[key];
     for (const key of Object.keys(this.activityQrIndexMap)) delete this.activityQrIndexMap[key];
+    for (const key of Object.keys(this.activityMeta)) delete this.activityMeta[key];
 
     const names = activities.map((a) => this.toActivityName(a));
     this.activityOptions = [...new Set(names)];
@@ -163,6 +158,12 @@ export class ActivityCheckIn implements OnInit {
       const id = String(activity._id ?? '').trim();
       if (name && id) this.activityIdMap[name] = id;
       if (name) this.activityQrIndexMap[name] = String((i % 10) + 1);
+      if (name) {
+        this.activityMeta[name] = {
+          date: this.formatActivityDate(activity),
+          location: String(activity.location ?? 'N/A'),
+        };
+      }
     }
 
     if (!this.selectedActivity || !this.activityOptions.includes(this.selectedActivity)) {
@@ -170,7 +171,7 @@ export class ActivityCheckIn implements OnInit {
     }
   }
 
-  private buildCheckInRecords(activities: Activity[], users: User[]): void {
+  private buildCheckInRecords(activities: ApiActivity[], users: User[]): void {
     const userMap: Record<string, User> = {};
     for (const user of users) {
       const id = String(user._id ?? '').trim();
@@ -200,7 +201,7 @@ export class ActivityCheckIn implements OnInit {
   }
 
   private resolveParticipants(
-    activity: Activity,
+    activity: ApiActivity,
     users: User[],
     userMap: Record<string, User>,
   ): CheckInParticipantEntry[] {
@@ -234,7 +235,7 @@ export class ActivityCheckIn implements OnInit {
     }));
   }
 
-  private formatActivityWhen(activity: Activity): string {
+  private formatActivityWhen(activity: ApiActivity): string {
     const dateText = String(activity.date ?? '').split('T')[0] ?? '';
     let timeText = '';
     if (typeof activity.start_time === 'number') {
@@ -245,7 +246,24 @@ export class ActivityCheckIn implements OnInit {
     return `${dateText} ${timeText}`.trim();
   }
 
-  private toActivityName(activity: Activity): string {
+  private formatActivityDate(activity: ApiActivity): string {
+    const rawDate = String(activity.date ?? '').split('T')[0] ?? '';
+    if (!rawDate) return 'N/A';
+
+    const parsed = new Date(rawDate);
+    if (Number.isNaN(parsed.getTime())) return rawDate;
+
+    return parsed.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  private toActivityName(activity: ApiActivity): string {
+    const activityName = String(activity.name ?? '').trim();
+    if (activityName) return activityName;
+
     const ngoName = String(activity.ngo_name ?? '').trim();
     if (ngoName) return ngoName;
 
