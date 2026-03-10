@@ -15,9 +15,9 @@ export const routes: Routes = [
         data: { role: 'Admin'},
         component: Admin,
         children: [
-            { path: '', redirectTo: 'dashboard', pathMatch: 'full'},
             { path: 'dashboard', loadComponent: () => import('./views/admin/dashboard/dashboard').then((admin) => admin.Dashboard)},
             { path: 'manage-ngo', loadComponent: () => import('./views/admin/manage-ngo/manage-ngo').then((admin) => admin.ManageNgo)},
+            { path: '', redirectTo: 'dashboard', pathMatch: 'full'}
         ]
     },
     {
@@ -26,10 +26,9 @@ export const routes: Routes = [
         data: { role: 'Employee'},
         component: Employee,
          children: [
-            { path: '', redirectTo: 'dashboard', pathMatch: 'full'},
             { path: 'dashboard', loadComponent: () => import('./views/employee/dashboard/dashboard').then((employee) => employee.Dashboard)},
-            { path: 'register', loadComponent: () => import('./views/employee/register/register').then((employee) => employee.Register)},
-            { path: 'check-in', loadComponent: () => import('./views/employee/check-in/check-in').then((employee) => employee.CheckIn)},
+            { path: 'notification', loadComponent: () => import('./views/employee/notification/notification').then((employee) => employee.Notification)},
+            { path: '', redirectTo: 'dashboard', pathMatch: 'full'}
         ]
     },
     { path: '**', redirectTo: 'login' }

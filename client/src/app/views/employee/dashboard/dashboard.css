@@ -1,0 +1,198 @@
+/* ── Card ── */
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+
+/* ── Activity Card ── */
+.activity-card {
+  border-left: 4px solid #e5e7eb;
+  transition: border-color 0.2s ease;
+}
+
+.activity-card:hover {
+  border-left-color: #4a6cf7;
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.activity-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+/* ── Status Badge ── */
+.status-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1.5px solid;
+}
+
+.status-open {
+  color: #16a34a;
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.status-full {
+  color: #dc2626;
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.status-closed {
+  color: #6b7280;
+  border-color: #6b7280;
+  background: #f9fafb;
+}
+
+/* ── Activity Meta ── */
+.activity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 10px;
+}
+
+.activity-meta strong {
+  color: #1a1a2e;
+}
+
+/* ── Description ── */
+.activity-description {
+  font-size: 14px;
+  color: #4b5563;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+/* ── Grid ── */
+.activity-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 24px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+.grid-item {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.grid-label {
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.grid-value {
+  color: #1a1a2e;
+}
+
+.grid-value.bold {
+  font-weight: 700;
+}
+
+/* ── Action Buttons ── */
+.activity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.btn-primary {
+  background: #4a6cf7;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #3a5ce4;
+}
+
+.btn-cancel {
+  background: white;
+  color: #dc2626;
+  border: 1.5px solid #dc2626;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.btn-outline {
+  background: white;
+  color: #374151;
+  border: 1.5px solid #d1d5db;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: #4a6cf7;
+  color: #4a6cf7;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Hints ── */
+.swap-hint {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.cutoff-passed {
+  font-size: 13px;
+  color: #dc2626;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* ── Empty State ── */
+.empty-state {
+  text-align: center;
+  padding: 60px 0;
+  color: #9ca3af;
+  font-size: 15px;
+}

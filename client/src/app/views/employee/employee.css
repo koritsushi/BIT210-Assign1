@@ -1,0 +1,11 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    height: 82vh;
+}
+
+.content-area {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-gutter: stable both-edges;
+}
