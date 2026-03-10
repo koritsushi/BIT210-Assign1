@@ -25,6 +25,14 @@ const activityId6 = new ObjectId("507f1f77bcf86cd799439026");
 
 const registered1 = new ObjectId("507f1f77bcf86cd799439031");
 
+const notification1 = new ObjectId("507f1f77bcf86cd799439041")
+const notification2 = new ObjectId("507f1f77bcf86cd799439042")
+const notification3 = new ObjectId("507f1f77bcf86cd799439043")
+const notification4 = new ObjectId("507f1f77bcf86cd799439044")
+const notification5 = new ObjectId("507f1f77bcf86cd799439045")
+const notification6 = new ObjectId("507f1f77bcf86cd799439046")
+const notification7 = new ObjectId("507f1f77bcf86cd799439047")
+const notification8 = new ObjectId("507f1f77bcf86cd799439048")
 // --- Mock Data ---
 export const mockUsers: User[] = [
   { _id: userId1, name: "Alice Tan", email: "alice@company.com", department: "IT", role: "Employee" },
@@ -57,9 +65,9 @@ export const mockRegistrations: Registration[] = [
 export const mockNotifications: Notification[] = [
     // --- Registration confirmation ---
     {
-        _id: new ObjectId("507f1f77bcf86cd799439041"),
-        user_id: userId1.toString(),
-        activity_id: activityId1.toString(),
+        _id: notification1,
+        user_id: userId1,
+        activity_id: activityId1,
         type: "Registration",
         message: "You have successfully registered for Beach Cleaning on 2026-04-10.",
         is_read: false,
@@ -70,9 +78,9 @@ export const mockNotifications: Notification[] = [
 
     // --- Cancellation notification ---
     {
-        _id: new ObjectId("507f1f77bcf86cd799439042"),
-        user_id: userId2.toString(),
-        activity_id: activityId2.toString(),
+        _id: notification2,
+        user_id: userId2,
+        activity_id: activityId2,
         type: "Cancellation",
         message: "Your registration for Food Bank Packing has been cancelled.",
         is_read: true,
@@ -83,9 +91,9 @@ export const mockNotifications: Notification[] = [
 
     // --- Scheduled reminder — 1 week before ---
     {
-        _id: new ObjectId("507f1f77bcf86cd799439043"),
-        user_id: userId1.toString(),
-        activity_id: activityId1.toString(),
+        _id: notification3,
+        user_id: userId1,
+        activity_id: activityId1,
         type: "Reminder",
         message: "Reminder: Beach Cleaning is coming up in 1 week on 2026-04-10. Please be prepared!",
         is_read: false,
@@ -96,9 +104,9 @@ export const mockNotifications: Notification[] = [
 
     // --- Scheduled reminder — 3 days before ---
     {
-        _id: new ObjectId("507f1f77bcf86cd799439044"),
-        user_id: userId1.toString(),
-        activity_id: activityId1.toString(),
+        _id: notification4,
+        user_id: userId1,
+        activity_id: activityId1,
         type: "Reminder",
         message: "Reminder: Beach Cleaning is in 3 days on 2026-04-10. Check your schedule!",
         is_read: false,
@@ -109,9 +117,9 @@ export const mockNotifications: Notification[] = [
 
     // --- Scheduled reminder — 1 day before ---
     {
-        _id: new ObjectId("507f1f77bcf86cd799439045"),
-        user_id: userId1.toString(),
-        activity_id: activityId1.toString(),
+        _id: notification5,
+        user_id: userId1,
+        activity_id: activityId1,
         type: "Reminder",
         message: "Reminder: Beach Cleaning is TOMORROW on 2026-04-10. Don't forget to bring your QR code!",
         is_read: false,
@@ -122,9 +130,9 @@ export const mockNotifications: Notification[] = [
 
     // --- Activity update ---
     {
-        _id: new ObjectId("507f1f77bcf86cd799439046"),
-        user_id: userId2.toString(),
-        activity_id: activityId2.toString(),
+        _id: notification6,
+        user_id: userId2,
+        activity_id: activityId2,
         type: "Update",
         message: "Food Bank Packing activity details have been updated. New location: PJ Community Center Level 2.",
         is_read: false,
@@ -135,9 +143,9 @@ export const mockNotifications: Notification[] = [
 
     // --- Urgent update — last available slots ---
     {
-        _id: new ObjectId("507f1f77bcf86cd799439047"),
-        user_id: userId2.toString(),
-        activity_id: activityId2.toString(),
+        _id: notification7,
+        user_id: userId2,
+        activity_id: activityId2,
         type: "Update",
         message: "Urgent: Only 2 slots remaining for Food Bank Packing on 2026-04-10. Register now!",
         is_read: false,
@@ -148,7 +156,7 @@ export const mockNotifications: Notification[] = [
 
     // --- Admin broadcast to all employees ---
     {
-        _id: new ObjectId("507f1f77bcf86cd799439048"),
+        _id: notification8,
         user_id: undefined,            // no specific user — broadcast to all
         activity_id: undefined,        // not activity specific
         type: "Broadcast",
