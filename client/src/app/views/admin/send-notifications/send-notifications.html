@@ -1,1 +1,196 @@
-<p>send-notifications works!</p>
+<div class="notification-page">
+  <header class="page-header">
+    <h1>Send Notifications and Reminders</h1>
+    <p class="page-description">
+      The administrator can send messages, link them to an activity, and store
+      schedule interval details for future notification handling.
+    </p>
+  </header>
+
+  <section class="content-grid">
+    <section class="card">
+      <div class="card-header">
+        <h2>Broadcast Message</h2>
+        <p>Create and send a notification for employees, NGOs, or all users.</p>
+      </div>
+
+      <div
+        *ngIf="feedbackMessage"
+        class="feedback"
+        [class.success]="feedbackType === 'success'"
+        [class.error]="feedbackType === 'error'"
+      >
+        {{ feedbackMessage }}
+      </div>
+
+      <div class="form-group">
+        <label for="title">Notification Title</label>
+        <input
+          id="title"
+          type="text"
+          [(ngModel)]="title"
+          placeholder="Enter notification title"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="type">Notification Type</label>
+          <select id="type" [(ngModel)]="type">
+            <option value="Registration">Registration</option>
+            <option value="Cancellation">Cancellation</option>
+            <option value="Reminder">Reminder</option>
+            <option value="Update">Update</option>
+            <option value="Broadcast">Broadcast</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="audience">Audience</label>
+          <select id="audience" [(ngModel)]="audience">
+            <option value="All">All</option>
+            <option value="Employees">Employees</option>
+            <option value="NGOs">NGOs</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="activityId">Related Activity</label>
+        <select id="activityId" [(ngModel)]="selectedActivityId">
+          <option value="">Select an activity</option>
+          <option *ngFor="let activity of activities()" [value]="activity._id">
+            {{ activity.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="message">Message</label>
+        <textarea
+          id="message"
+          rows="5"
+          [(ngModel)]="message"
+          placeholder="Enter your message"
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="scheduledAt">Schedule Date and Time</label>
+        <input
+          id="scheduledAt"
+          type="datetime-local"
+          [(ngModel)]="scheduledAt"
+        />
+      </div>
+
+      <div class="button-row">
+        <button class="primary-btn" type="button" (click)="sendNow()">
+          Send Now
+        </button>
+        <button
+          class="secondary-btn"
+          type="button"
+          (click)="scheduleNotification()"
+        >
+          Schedule Notification
+        </button>
+        <button class="secondary-btn" type="button" (click)="resetForm()">
+          Clear
+        </button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2>Schedule Intervals</h2>
+        <p>Store repeat interval information for backend scheduling data.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="repeatIntervelMinutes">Repeat Interval (Minutes)</label>
+        <input
+          id="repeatIntervelMinutes"
+          type="number"
+          min="1"
+          [(ngModel)]="repeatIntervelMinutes"
+          placeholder="Example: 60"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="repeatUntil">Repeat Until</label>
+        <input
+          id="repeatUntil"
+          type="datetime-local"
+          [(ngModel)]="repeatUntil"
+        />
+      </div>
+
+      <div class="summary-card">
+        <h3>Interval Purpose</h3>
+        <p>
+          These values are stored with the notification so the backend can keep
+          the interval configuration data.
+        </p>
+      </div>
+    </section>
+  </section>
+
+  <section class="card preview-card">
+    <div class="card-header">
+      <h2>Recent Notifications</h2>
+      <p>Review sent and scheduled notifications without reloading the page.</p>
+    </div>
+
+    <div *ngIf="loading" class="loading-box">
+      Loading notifications...
+    </div>
+
+    <div *ngIf="!loading && notifications.length === 0" class="loading-box">
+      No notifications available.
+    </div>
+
+    <div
+      *ngIf="!loading && notifications.length > 0"
+      class="notification-list"
+    >
+      <article class="notification-item" *ngFor="let item of notifications">
+        <div class="notification-top">
+          <div>
+            <h3>{{ item.title }}</h3>
+            <p class="notification-message">{{ item.message }}</p>
+          </div>
+
+          <div class="notification-actions">
+            <span
+              class="status-badge"
+              [class.sent]="item.status === 'Sent'"
+              [class.scheduled]="item.status === 'Scheduled'"
+            >
+              {{ item.status }}
+            </span>
+
+            <button
+              type="button"
+              class="delete-btn"
+              (click)="deleteNotification(item)"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+
+        <div class="meta-grid">
+          <p><strong>Type:</strong> {{ item.type }}</p>
+          <p><strong>Audience:</strong> {{ item.audience }}</p>
+          <p><strong>Activity:</strong> {{ item.activityName || 'Not selected' }}</p>
+          <p><strong>Scheduled At:</strong> {{ item.scheduledAt }}</p>
+          <p><strong>Sent At:</strong> {{ item.sentAt || '-' }}</p>
+          <p><strong>Interval:</strong> {{ getIntervalSummary(item) }}</p>
+          <p><strong>Repeat Until:</strong> {{ item.repeatUntil || '-' }}</p>
+        </div>
+      </article>
+    </div>
+  </section>
+</div>
