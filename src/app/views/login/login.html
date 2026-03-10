@@ -1,0 +1,15 @@
+<div class="page">
+  <div class="card">
+    <h2>Login</h2>
+
+    <label>Email</label>
+    <input type="text" [(ngModel)]="email" />
+
+    <label>Password</label>
+    <input type="password" [(ngModel)]="password" />
+
+    <button (click)="onLogin()">Login</button>
+
+    <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  </div>
+</div>

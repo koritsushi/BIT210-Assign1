@@ -1,0 +1,31 @@
+<div class="page">
+  <h2>Employee Notifications</h2>
+
+  <div class="card">
+    <h3>Reminder List</h3>
+
+    <div *ngFor="let item of reminderNotifications()" class="notification-item reminder-item">
+      <p><strong>⏰ Reminder</strong> - {{ item.message }}</p>
+      <p *ngIf="item.activityName">Activity: {{ item.activityName }}</p>
+      <p>{{ item.sentAt }}</p>
+    </div>
+
+    <p *ngIf="reminderNotifications().length === 0" class="empty-text">
+      No reminders yet.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>Other Notifications</h3>
+
+    <div *ngFor="let item of generalNotifications()" class="notification-item general-item">
+      <p><strong>{{ item.type }}</strong> - {{ item.message }}</p>
+      <p *ngIf="item.activityName">Activity: {{ item.activityName }}</p>
+      <p>{{ item.sentAt }}</p>
+    </div>
+
+    <p *ngIf="generalNotifications().length === 0" class="empty-text">
+      No other notifications yet.
+    </p>
+  </div>
+</div>

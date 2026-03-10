@@ -1,0 +1,86 @@
+<div class="page">
+  <h2>Admin Notifications</h2>
+
+  <button class="reset-btn" (click)="resetNotifications()">
+    Reset All Notifications
+  </button>
+
+  <div class="card">
+    <h3>Broadcast Message</h3>
+
+    <label>Message</label>
+    <textarea [(ngModel)]="message" rows="4"></textarea>
+
+    <label>Type</label>
+    <select [(ngModel)]="selectedType">
+      <option value="General">General</option>
+      <option value="Update">Update</option>
+      <option value="Cancellation">Cancellation</option>
+      <option value="Registration">Registration</option>
+      <option value="Reminder">Reminder</option>
+    </select>
+
+    <label>Target Role</label>
+    <select [(ngModel)]="targetRole">
+      <option value="Employee">Employee</option>
+      <option value="Admin">Admin</option>
+      <option value="All">All</option>
+    </select>
+
+    <button (click)="sendNotification()">Send Broadcast Message</button>
+  </div>
+
+  <div class="card">
+    <h3>Schedule Reminder</h3>
+
+    <label>Select Activity</label>
+    <select [(ngModel)]="selectedActivityId">
+      <option value="">-- Select Activity --</option>
+      <option *ngFor="let activity of activities()" [value]="activity._id">
+        {{ activity.activity_name }}
+      </option>
+    </select>
+
+    <label>Reminder Interval</label>
+    <select [(ngModel)]="reminderTime">
+      <option value="1 week">1 Week Before</option>
+      <option value="3 days">3 Days Before</option>
+      <option value="1 day">1 Day Before</option>
+    </select>
+
+    <div class="button-row">
+      <button (click)="sendReminder()">Schedule Reminder</button>
+      <button (click)="sendUrgentSlotsUpdate()">Send Urgent Slots Update</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Reminder List</h3>
+
+    <div *ngFor="let item of reminderNotifications()" class="notification-item reminder-item">
+      <p><strong>⏰ Reminder</strong> - {{ item.message }}</p>
+      <p *ngIf="item.activityName">Activity: {{ item.activityName }}</p>
+      <p>Target: {{ item.targetRole }}</p>
+      <p>{{ item.sentAt }}</p>
+    </div>
+
+    <p *ngIf="reminderNotifications().length === 0" class="empty-text">
+      No reminders yet.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>Other Notifications</h3>
+
+    <div *ngFor="let item of generalNotifications()" class="notification-item general-item">
+      <p><strong>{{ item.type }}</strong> - {{ item.message }}</p>
+      <p *ngIf="item.activityName">Activity: {{ item.activityName }}</p>
+      <p>Target: {{ item.targetRole }}</p>
+      <p>{{ item.sentAt }}</p>
+    </div>
+
+    <p *ngIf="generalNotifications().length === 0" class="empty-text">
+      No other notifications yet.
+    </p>
+  </div>
+</div>
