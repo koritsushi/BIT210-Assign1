@@ -24,6 +24,7 @@ export class Login {
         this.authService.login(this.name).subscribe({
             next: (res) => {
                 this.authService.saveToken(res.token);
+                this.authService.saveUserId(res.user._id);
                 this.authService.saveName(res.user.name);
                 this.authService.saveRole(res.user.role);
                 if (this.authService.getRole() === "Employee")

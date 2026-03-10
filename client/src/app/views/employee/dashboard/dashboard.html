@@ -1,1 +1,109 @@
-<p>dashboard works!</p>
+<div class="dashboard-container">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1>Employee Service Day Activities</h1>
+    <p>View opportunities, register for slots, and manage changes before the cut-off date/time.</p>
+  </div>
+
+ 
+
+  <!-- Activity Cards -->
+  <div *ngFor="let activity of activities()" class="card activity-card">
+
+    <!-- Card Header -->
+    <div class="activity-header">
+      <h2>{{ activity.name }}</h2>
+      <span class="status-badge" [ngClass]="{
+        'status-open': activity.status === 'Open',
+        'status-full': activity.status === 'Full',
+        'status-closed': activity.status === 'Closed'
+      }">{{ activity.status }}</span>
+    </div>
+
+    <!-- NGO Info — use getNgo() helper to look up by ngo_id -->
+    <div class="activity-meta">
+      <span><strong>NGO:</strong> {{ getNgo(activity.ngo_id)?.name ?? 'N/A' }}</span>
+      <span><strong>Service Type:</strong> {{ getNgo(activity.ngo_id)?.service_type ?? 'N/A' }}</span>
+      <span><strong>Location:</strong> {{ getNgo(activity.ngo_id)?.location ?? 'N/A' }}</span>
+    </div>
+
+    <!-- Description -->
+    <p class="activity-description">{{ getNgo(activity.ngo_id)?.description ?? '' }}</p>
+
+    <!-- Slots & Schedule Grid -->
+    <div class="activity-grid">
+      <div class="grid-item">
+        <span class="grid-label">When</span>
+        <span class="grid-value bold">
+          {{ activity.date | date: 'yyyy-MM-dd' }}
+          {{ activity.start_time | date: 'HH:mm' }} → {{ activity.end_time | date: 'HH:mm' }}
+        </span>
+      </div>
+      <div class="grid-item">
+        <span class="grid-label">Cut-off</span>
+        <span class="grid-value bold">{{ activity.cutoff_datetime | date: 'yyyy-MM-dd HH:mm' : '+0800' }}</span>
+      </div>
+      <div class="grid-item">
+        <span class="grid-label">Offered</span>
+        <span class="grid-value bold">{{ activity.max_slots }}</span>
+      </div>
+      <div class="grid-item">
+        <span class="grid-label">Taken</span>
+        <span class="grid-value bold">{{ activity.slots_taken }}</span>
+      </div>
+      <div class="grid-item">
+        <span class="grid-label">Remaining</span>
+        <span class="grid-value bold">{{ getRemainingSlots(activity) }}</span>
+      </div>
+      <div class="grid-item">
+        <span class="grid-label">Current (Swap FROM)</span>
+        <span class="grid-value bold">
+          {{ currentSwapActivity?._id === activity._id ? 'Yes' : 'No' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Action Buttons — only show if cutoff has not passed -->
+    <div class="activity-actions" *ngIf="!isCutoffPassed(activity)">
+      <button
+        class="btn-primary"
+        [disabled]="isRegistered(activity._id) || activity.status !== 'Open' || getRemainingSlots(activity) === 0"
+        (click)="register(activity)">
+        Register 1 Slot
+      </button>
+      <button
+        class="btn-cancel"
+        [disabled]="!isRegistered(activity._id)"
+        (click)="cancel(activity)">
+        Cancel 1 Slot
+      </button>
+      <button
+        class="btn-outline"
+        [disabled]="!isRegistered(activity._id)"
+        (click)="setAsCurrentSwap(activity)">
+        Set as Current (for Swap)
+      </button>
+      <button
+        class="btn-outline"
+        [disabled]="!canSwapTo(activity)"
+        (click)="swapTo(activity)">
+        Swap to this activity
+      </button>
+    </div>
+
+    <p *ngIf="!isCutoffPassed(activity)" class="swap-hint">
+      Swap moves 1 slot from the Current Activity (FROM) to this activity (TO).
+    </p>
+    <p *ngIf="isCutoffPassed(activity)" class="cutoff-passed">
+      ⚠ Registration cut-off has passed for this activity.
+    </p>
+
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="activities().length === 0" class="empty-state">
+    <p>No activities available at this time.</p>
+  </div>
+
+</div>

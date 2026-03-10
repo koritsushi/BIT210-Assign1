@@ -1,0 +1,51 @@
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Notification Card ── */
+.notification-card {
+  border-left: 4px solid #4a6cf7;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notification-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.notification-body {
+  margin-top: 12px;
+}
+
+.notification-body ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #374151;
+  font-size: 14px;
+}
+
+.notification-body li {
+  margin-bottom: 4px;
+}
+
+.muted {
+  color: #9ca3af;
+  font-size: 14px;
+  margin: 0;
+}
