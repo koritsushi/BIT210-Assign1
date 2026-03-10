@@ -1,1 +1,177 @@
-<p>activity-check-in works!</p>
+<main class="checkin-admin-page">
+  <header class="page-header">
+    <p class="eyebrow">UC6 · ADMIN</p>
+    <h1>Live Activity Check-In Monitor</h1>
+    <p class="page-description">
+      Generate a unique QR code for each Service Day activity, monitor employee
+      attendance live, and review post-event summary records.
+    </p>
+  </header>
+
+  <section class="panel-card qr-generator-card">
+    <div class="section-title">
+      <h2>Generate Activity QR Code</h2>
+      <p>
+        Select a Service Day activity and generate the QR code used by employees
+        for check-in.
+      </p>
+    </div>
+
+    <div class="generator-grid">
+      <div class="form-group">
+        <label for="selectedActivity">Service Day Activity</label>
+        <select
+          id="selectedActivity"
+          [(ngModel)]="selectedActivity"
+          (change)="generateActivityQr()">
+          @for (activity of activities; track activity) {
+            <option [value]="activity">{{ activity }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="action-row">
+        <button class="primary-btn" (click)="generateActivityQr()">
+          Generate QR Code
+        </button>
+      </div>
+    </div>
+
+    <div class="qr-display-grid">
+      <div class="qr-box">
+        @if (generatedQrImageUrl) {
+          <img [src]="generatedQrImageUrl" alt="Activity QR Code" class="qr-image" />
+        } @else {
+          <p class="empty-qr-text">QR code preview unavailable.</p>
+        }
+      </div>
+
+      <div class="qr-info">
+        <div class="info-item">
+          <span class="info-label">Selected Activity</span>
+          <span class="info-value">{{ selectedActivity }}</span>
+        </div>
+
+        <div class="info-item">
+          <span class="info-label">QR Value</span>
+          <span class="info-value qr-value-text">{{ generatedQrValue }}</span>
+        </div>
+
+        <div class="info-item">
+          <span class="info-label">Selected Activity Attendance</span>
+          <span class="info-value">
+            {{ selectedActivitySummary.present }} / {{ selectedActivitySummary.total }}
+            checked in ({{ selectedActivitySummary.attendanceRate }}%)
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <span class="summary-label">Total Registrations</span>
+      <strong class="summary-value">{{ summary.total }}</strong>
+      <p class="summary-note">All registered employees</p>
+    </article>
+
+    <article class="summary-card success-card">
+      <span class="summary-label">Checked In</span>
+      <strong class="summary-value">{{ summary.present }}</strong>
+      <p class="summary-note">Employees marked as present</p>
+    </article>
+
+    <article class="summary-card warning-card">
+      <span class="summary-label">Pending</span>
+      <strong class="summary-value">{{ summary.pending }}</strong>
+      <p class="summary-note">Employees not checked in yet</p>
+    </article>
+
+    <article class="summary-card info-card">
+      <span class="summary-label">Attendance Rate</span>
+      <strong class="summary-value">{{ summary.attendanceRate }}%</strong>
+      <p class="summary-note">Overall post-event attendance</p>
+    </article>
+  </section>
+
+  <section class="panel-card">
+    <div class="section-title">
+      <h2>Live Check-In Records</h2>
+      <p>
+        Verify employee attendance, check-in time, and activity QR usage in real time.
+      </p>
+    </div>
+
+    @if (checkins.length === 0) {
+      <div class="empty-state">
+        <p>No check-in records available.</p>
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Employee</th>
+              <th>Activity</th>
+              <th>Status</th>
+              <th>Check-In Time</th>
+              <th>Activity QR Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of checkins; track item.id) {
+              <tr>
+                <td>{{ item.id }}</td>
+                <td>{{ item.employeeName }}</td>
+                <td>{{ item.activityName }}</td>
+                <td>
+                  <span
+                    class="status-badge"
+                    [class.status-present]="item.status === 'Present'"
+                    [class.status-pending]="item.status === 'Pending'">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td>{{ item.checkInTime || 'Not checked in yet' }}</td>
+                <td class="qr-text">{{ item.activityQrValue }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <section class="panel-card">
+    <div class="section-title">
+      <h2>Post-Event Attendance Summary</h2>
+      <p>
+        Review total registrations, checked-in employees, and pending attendance by activity.
+      </p>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="history-table report-table">
+        <thead>
+          <tr>
+            <th>Activity</th>
+            <th>Total</th>
+            <th>Checked In</th>
+            <th>Pending</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of activityReport; track row.activityName) {
+            <tr>
+              <td>{{ row.activityName }}</td>
+              <td>{{ row.total }}</td>
+              <td>{{ row.present }}</td>
+              <td>{{ row.pending }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>

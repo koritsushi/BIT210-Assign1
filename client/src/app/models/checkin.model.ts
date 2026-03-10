@@ -1,10 +1,10 @@
-export interface Checkin {
-  _id?: string;
-  registration_id: string;
+export type CheckInStatus = 'Present' | 'Pending';
 
-  activity_id?: string;
-  token?: string;
-
-  checkin_time: string | Date;
-  method: string;
+export interface CheckInRecord {
+  id: number;
+  employeeName: string;
+  activityName: string;
+  activityQrValue: string;
+  checkInTime: string;
+  status: CheckInStatus;
 }

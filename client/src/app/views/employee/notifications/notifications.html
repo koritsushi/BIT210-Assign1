@@ -1,0 +1,66 @@
+<main class="page">
+  <header class="page-header">
+    <p class="eyebrow">UC5 · EMPLOYEE</p>
+    <h1>My Notifications</h1>
+    <p class="subtitle">
+      View announcements, reminders, and important Service Day updates.
+    </p>
+  </header>
+
+  @if (loading) {
+    <div class="empty-state">
+      <p>Loading notifications...</p>
+    </div>
+  } @else if (errorMessage) {
+    <div class="empty-state">
+      <p>{{ errorMessage }}</p>
+    </div>
+  } @else if (notifications.length === 0) {
+    <div class="empty-state">
+      <p>No notifications available.</p>
+    </div>
+  } @else {
+    <div class="notification-list">
+      @for (item of notifications; track item.id; let first = $first) {
+        <article class="notification-card">
+          <div class="top-row">
+            <div class="title-group">
+              <h3>{{ item.title }}</h3>
+              @if (first) {
+                <span class="latest-tag">Latest</span>
+              }
+            </div>
+
+            <span class="badge" [ngClass]="getBadgeClass(item.type)">
+              {{ item.type }}
+            </span>
+          </div>
+
+          <p class="message">{{ item.message }}</p>
+
+          <div class="meta-grid">
+            <div class="meta-item">
+              <span class="meta-label">Activity</span>
+              <span class="meta-value">{{ item.relatedActivity }}</span>
+            </div>
+
+            <div class="meta-item">
+              <span class="meta-label">Schedule</span>
+              <span class="meta-value">{{ item.schedule }}</span>
+            </div>
+
+            <div class="meta-item">
+              <span class="meta-label">Status</span>
+              <span class="meta-value">{{ item.status }}</span>
+            </div>
+
+            <div class="meta-item">
+              <span class="meta-label">Created</span>
+              <span class="meta-value">{{ item.createdAt }}</span>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</main>

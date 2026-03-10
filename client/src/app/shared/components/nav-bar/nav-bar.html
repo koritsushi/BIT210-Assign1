@@ -1,42 +1,52 @@
 <nav class="nav">
-    @if (auth.isLoggedIn() && auth.getRole() === "Employee") {
-        <a
-        routerLink="/employee/dashboard"
-        routerLinkActive="active"
-        class="nav-item">
-        Dashboard
-        </a>
-      <a
-        routerLink="/employee/dashboard"
-        routerLinkActive="active"
-            class="nav-item">
-            My Registrations
-        </a>
-        <a
-            routerLink="/employee/check-in"
-            routerLinkActive="active"
-            class="nav-item">
-            Check In
-        </a>
-    } @else if (auth.isLoggedIn() && auth.getRole() === "Admin") {
-        <a
-            routerLink="/admin/dashboard"
-            routerLinkActive="active"
-            class="nav-item">
-            Dashboard
-            </a>
-        <a
-            routerLink="/admin/activity-check-in"
-            routerLinkActive="active"
-            class="nav-item">
-            Activity Check-In
-        </a>
-        <a
-            routerLink="/admin/send-notifications"
-            routerLinkActive="active"
-            class="nav-item">
-            Send Notifications
-        </a>
-    }
+  @if (auth.isLoggedIn() && auth.getRole() === "Employee") {
+    <a
+      routerLink="/employee/dashboard"
+      routerLinkActive="active"
+      class="nav-item">
+      Dashboard
+    </a>
 
+    <a
+      routerLink="/employee/register"
+      routerLinkActive="active"
+      class="nav-item">
+      My Registrations
+    </a>
+
+    <a
+      routerLink="/employee/notifications"
+      routerLinkActive="active"
+      class="nav-item">
+      Notifications
+    </a>
+
+    <a
+      routerLink="/employee/check-in"
+      routerLinkActive="active"
+      class="nav-item">
+      Check In
+    </a>
+  } @else if (auth.isLoggedIn() && auth.getRole() === "Admin") {
+    <a
+      routerLink="/admin/dashboard"
+      routerLinkActive="active"
+      class="nav-item">
+      Dashboard
+    </a>
+
+    <a
+      routerLink="/admin/activity-check-in"
+      routerLinkActive="active"
+      class="nav-item">
+      Activity Check-In
+    </a>
+
+    <a
+      routerLink="/admin/send-notifications"
+      routerLinkActive="active"
+      class="nav-item">
+      Send Notifications
+    </a>
+  }
 </nav>

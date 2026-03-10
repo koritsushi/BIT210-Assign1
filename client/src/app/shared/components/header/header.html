@@ -1,37 +1,42 @@
 <header class="header">
-    <div class="brand">
-        <div class="brand-title">Service Day Dashboard</div>
-        <div class="brand-subtitle">CSR Volunteer Registration System</div>
-    </div>
-    <nav class="nav">
+  <div class="brand">
+    <div class="brand-title">Service Day Dashboard</div>
+    <div class="brand-subtitle">CSR Volunteer Registration System</div>
+  </div>
+
+  <nav class="nav">
     @if (!auth.isLoggedIn()) {
-        <a  routerLink="/login" 
-            routerLinkActive="active" 
-            class="nav-link">
-            Login
-        </a>
+      <a
+        routerLink="/login"
+        routerLinkActive="active"
+        class="nav-link">
+        Login
+      </a>
     }
-    @if (auth.isLoggedIn() && auth.getRole() === "employee") {
-        <a  routerLink="/employee"
-            routerLinkActive="active"
-            class="nav-link"
-            disabled>
-            Employee
-        </a>
-    } @else if (auth.isLoggedIn() && auth.getRole() === "admin") {
-        <a  routerLink="/admin"
-            routerLinkActive="active"
-            class="nav-link">
-            Admin
-        </a>
-    
+
+    @if (auth.isLoggedIn() && auth.getRole() === "Employee") {
+      <a
+        routerLink="/employee/dashboard"
+        routerLinkActive="active"
+        class="nav-link">
+        Employee
+      </a>
+    } @else if (auth.isLoggedIn() && auth.getRole() === "Admin") {
+      <a
+        routerLink="/admin/dashboard"
+        routerLinkActive="active"
+        class="nav-link">
+        Admin
+      </a>
     }
-    </nav>
-    
-    @if (auth.isLoggedIn()) {
+  </nav>
+
+  @if (auth.isLoggedIn()) {
     <div class="authbar">
-        <span class="authtext">Logged in as: {{ auth.getRole() }} ({{ auth.getName() }})</span>
-        <button class="btn small" (click)="auth.logOut()">Logout</button>
+      <span class="authtext">
+        Logged in as: {{ auth.getRole() }} ({{ auth.getName() }})
+      </span>
+      <button class="btn small" (click)="auth.logOut()">Logout</button>
     </div>
-    }
+  }
 </header>

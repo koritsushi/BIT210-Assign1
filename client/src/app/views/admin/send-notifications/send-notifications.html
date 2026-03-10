@@ -1,1 +1,257 @@
-<p>send-notifications works!</p>
+<main class="notification-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">UC5 · ADMIN / SYSTEM</p>
+      <h1>Notification Centre</h1>
+      <p class="page-description">
+        Send announcements, schedule reminders, and highlight urgent Service Day
+        updates for employees and NGO participants.
+      </p>
+    </div>
+  </header>
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <span class="summary-label">Total Notifications</span>
+      <strong class="summary-value">{{ counts.total }}</strong>
+      <p class="summary-note">All sent and scheduled records</p>
+    </article>
+
+    <article class="summary-card">
+      <span class="summary-label">Broadcast Messages</span>
+      <strong class="summary-value">{{ counts.broadcast }}</strong>
+      <p class="summary-note">General announcements and updates</p>
+    </article>
+
+    <article class="summary-card">
+      <span class="summary-label">Scheduled Reminders</span>
+      <strong class="summary-value">{{ counts.reminders }}</strong>
+      <p class="summary-note">1 week, 3 days, or 1 day before</p>
+    </article>
+
+    <article class="summary-card urgent">
+      <span class="summary-label">Urgent Alerts</span>
+      <strong class="summary-value">{{ counts.urgent }}</strong>
+      <p class="summary-note">Last available slots or urgent changes</p>
+    </article>
+  </section>
+
+  @if (feedbackMessage) {
+    <section
+      class="feedback-banner"
+      [class.feedback-success]="feedbackType === 'success'"
+      [class.feedback-error]="feedbackType === 'error'">
+      {{ feedbackMessage }}
+    </section>
+  }
+
+  <section class="workspace-grid">
+    <article class="panel-card">
+      <div class="panel-head">
+        <h2>Broadcast Message</h2>
+        <p>Send a direct announcement to employees, NGOs, or everyone.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="broadcastTitle">Title</label>
+        <input
+          id="broadcastTitle"
+          type="text"
+          [(ngModel)]="broadcastTitle"
+          placeholder="Enter message title" />
+      </div>
+
+      <div class="form-grid two-columns">
+        <div class="form-group">
+          <label for="broadcastAudience">Audience</label>
+          <select id="broadcastAudience" [(ngModel)]="broadcastAudience">
+            <option value="Employee">Employee</option>
+            <option value="NGO">NGO</option>
+            <option value="All">All</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="broadcastActivity">Related Activity</label>
+          <select id="broadcastActivity" [(ngModel)]="broadcastActivity">
+            <option value="General Announcement">General Announcement</option>
+            <option value="Beach Cleaning">Beach Cleaning</option>
+            <option value="Tree Planting">Tree Planting</option>
+            <option value="Food Distribution">Food Distribution</option>
+            <option value="Animal Shelter Support">Animal Shelter Support</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="broadcastMessage">Message</label>
+        <textarea
+          id="broadcastMessage"
+          rows="5"
+          [(ngModel)]="broadcastMessage"
+          placeholder="Enter broadcast content"></textarea>
+      </div>
+
+      <div class="action-row">
+        <button class="primary-btn" (click)="sendBroadcast()" [disabled]="loading">
+          Send Broadcast
+        </button>
+      </div>
+    </article>
+
+    <article class="panel-card">
+      <div class="panel-head">
+        <h2>Scheduled Reminder</h2>
+        <p>
+          Set reminders before Service Day activities at different time intervals.
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label for="reminderTitle">Reminder Title</label>
+        <input
+          id="reminderTitle"
+          type="text"
+          [(ngModel)]="reminderTitle"
+          placeholder="Enter reminder title" />
+      </div>
+
+      <div class="form-grid two-columns">
+        <div class="form-group">
+          <label for="reminderAudience">Audience</label>
+          <select id="reminderAudience" [(ngModel)]="reminderAudience">
+            <option value="Employee">Employee</option>
+            <option value="NGO">NGO</option>
+            <option value="All">All</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="reminderActivity">Related Activity</label>
+          <select id="reminderActivity" [(ngModel)]="reminderActivity">
+            <option value="Beach Cleaning">Beach Cleaning</option>
+            <option value="Tree Planting">Tree Planting</option>
+            <option value="Food Distribution">Food Distribution</option>
+            <option value="Animal Shelter Support">Animal Shelter Support</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-grid two-columns">
+        <div class="form-group">
+          <label for="reminderSchedule">Reminder Time</label>
+          <select id="reminderSchedule" [(ngModel)]="reminderSchedule">
+            <option value="1 week before">1 week before</option>
+            <option value="3 days before">3 days before</option>
+            <option value="1 day before">1 day before</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          <input type="text" value="Scheduled" disabled />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="reminderMessage">Reminder Message</label>
+        <textarea
+          id="reminderMessage"
+          rows="5"
+          [(ngModel)]="reminderMessage"
+          placeholder="Enter reminder content"></textarea>
+      </div>
+
+      <div class="action-row">
+        <button class="primary-btn" (click)="scheduleReminder()" [disabled]="loading">
+          Set Reminder
+        </button>
+      </div>
+    </article>
+  </section>
+
+  <section class="quick-action-section">
+    <article class="quick-card">
+      <div>
+        <h2>Urgent Update</h2>
+        <p>
+          Highlight urgent situations such as last available volunteer slots.
+        </p>
+      </div>
+
+      <button class="warning-btn" (click)="sendUrgentSlotsAlert()" [disabled]="loading">
+        Send Last Slot Alert
+      </button>
+    </article>
+  </section>
+
+  <section class="history-section">
+    <div class="section-title">
+      <h2>Notification History</h2>
+      <p>Review all sent and scheduled records without reloading the page.</p>
+    </div>
+
+    @if (loading) {
+      <div class="empty-state">
+        <p>Loading records...</p>
+      </div>
+    } @else if (notifications.length === 0) {
+      <div class="empty-state">
+        <p>No notification records available.</p>
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Audience</th>
+              <th>Activity</th>
+              <th>Schedule</th>
+              <th>Status</th>
+              <th>Created At</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of notifications; track item.id) {
+              <tr>
+                <td>{{ item.id }}</td>
+                <td>{{ item.title }}</td>
+                <td>
+                  <span class="type-badge">{{ item.type }}</span>
+                </td>
+                <td>{{ item.audience }}</td>
+                <td>{{ item.relatedActivity }}</td>
+                <td>{{ item.schedule }}</td>
+                <td>
+                  <span
+                    class="status-badge"
+                    [class.status-sent]="item.status === 'Sent'"
+                    [class.status-scheduled]="item.status === 'Scheduled'">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td>{{ item.createdAt }}</td>
+                <td>
+                  @if (item.status === 'Scheduled') {
+                    <button
+                      class="table-action-btn"
+                      (click)="sendNow(item)"
+                      [disabled]="loading">
+                      Send Now
+                    </button>
+                  } @else {
+                    <span class="muted-text">Completed</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</main>

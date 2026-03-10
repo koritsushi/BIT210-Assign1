@@ -1,0 +1,169 @@
+.page {
+  padding: 24px;
+  background: #f4f7fb;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #4e7ee7;
+  text-transform: uppercase;
+}
+
+.page-header h1 {
+  margin: 0 0 10px;
+  font-size: 38px;
+  color: #12263f;
+}
+
+.subtitle {
+  margin: 0;
+  color: #5f6f82;
+  line-height: 1.7;
+  max-width: 760px;
+}
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.notification-card {
+  background: #ffffff;
+  border: 1px solid #dce5f0;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 10px 24px rgba(18, 38, 63, 0.05);
+}
+
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.top-row h3 {
+  margin: 0;
+  color: #12263f;
+  font-size: 28px;
+}
+
+.latest-tag {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #e8fff1;
+  color: #18794e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge {
+  display: inline-block;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge-broadcast {
+  background: #eef4ff;
+  color: #2f6fdf;
+}
+
+.badge-reminder {
+  background: #fff7e8;
+  color: #b26a00;
+}
+
+.badge-urgent {
+  background: #fff1f1;
+  color: #c81e1e;
+}
+
+.badge-registration {
+  background: #eaf8ef;
+  color: #19703a;
+}
+
+.badge-cancellation {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.message {
+  margin: 0 0 16px;
+  color: #435466;
+  line-height: 1.7;
+  font-size: 16px;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.meta-item {
+  background: #f8fbff;
+  border: 1px solid #e4edf7;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.meta-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #66788a;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.meta-value {
+  color: #23364d;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.empty-state {
+  padding: 28px 18px;
+  text-align: center;
+  color: #6f7f90;
+  background: #f8fafc;
+  border: 1px dashed #d7e1eb;
+  border-radius: 14px;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 18px;
+  }
+
+  .page-header h1 {
+    font-size: 30px;
+  }
+
+  .top-row h3 {
+    font-size: 24px;
+  }
+}
