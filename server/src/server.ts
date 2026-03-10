@@ -2,12 +2,12 @@ import * as dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import { connectDB, connectMockDB } from "./database";
-import { userRouter } from "./user.routes";
-import { activityRouter } from "./activity.routes";
-import { registrationRouter } from "./registration.routes";
-import { ngoRouter } from "./ngo.routes";
-import { authRouter } from "./auth.routes";
-import { notificationRouter } from "./notification.routes";
+import { userRouter } from "./routes/user.routes";
+import { activityRouter } from "./routes/activity.routes";
+import { registrationRouter } from "./routes/registration.routes";
+import { ngoRouter } from "./routes/ngo.routes";
+import { authRouter } from "./routes/auth.routes";
+import { notificationRouter } from "./routes/notification.routes";
 
 //dotenv.config();
 //const { ATLAS_URI } = process.env;

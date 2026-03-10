@@ -1,6 +1,6 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import { collections } from "./database";
+import { collections } from "../database";
 
 export const authRouter = express.Router();
 

@@ -1,6 +1,6 @@
 import * as express from "express";
 import { ObjectId } from "mongodb";
-import { collections } from "./database";
+import { collections } from "../database";
 
 export const notificationRouter = express.Router();
 notificationRouter.use(express.json());

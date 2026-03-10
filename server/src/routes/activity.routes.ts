@@ -1,7 +1,7 @@
 import * as express from "express";
 import { ObjectId } from "mongodb";
-import { collections } from "./database";
-import { mockActivities } from "../mockdata";
+import { collections } from "../database";
+import { mockActivities } from "../../mockdata";
 
 export const activityRouter = express.Router();
 activityRouter.use(express.json());
