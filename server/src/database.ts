@@ -1,9 +1,9 @@
 import * as mongodb from "mongodb";
-import { User } from "./user";
-import { Activity } from "./activity";
-import { Registration } from "./registration";
-import { Ngo } from "./ngo";
-import { Notification } from "./notification";
+import { User } from "./modal/user";
+import { Activity } from "./modal/activity";
+import { Registration } from "./modal/registration";
+import { Ngo } from "./modal/ngo";
+import { Notification } from "./modal/notification";
 import { mockUsers, mockActivities, mockNgos, mockRegistrations, mockNotifications } from "../mockdata";
 
 export const collections: {
