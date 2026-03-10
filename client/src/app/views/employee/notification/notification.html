@@ -1,8 +1,4 @@
-<!-- Page Header -->
-<div class="page-header">
-    <h1>Notifications</h1>
-</div>
-
+<br>
 <!-- Notifications Panel -->
 <div class="card notification-card">
     <div class="notification-header">
@@ -30,23 +26,18 @@
     <!-- Notification Type Summary -->
     <div *ngIf="!notificationsCollapsed && getUserNotifications().length > 0" class="notification-summary">
         <div class="summary-item" *ngIf="getCountByType('Registration') > 0">
-            <span class="summary-icon">✓</span>
             <span class="summary-text">{{ getCountByType('Registration') }} Registration(s)</span>
         </div>
         <div class="summary-item" *ngIf="getCountByType('Cancellation') > 0">
-            <span class="summary-icon">✗</span>
             <span class="summary-text">{{ getCountByType('Cancellation') }} Cancellation(s)</span>
         </div>
         <div class="summary-item" *ngIf="getCountByType('Update') > 0">
-            <span class="summary-icon">🔄</span>
             <span class="summary-text">{{ getCountByType('Update') }} Update(s)</span>
         </div>
         <div class="summary-item" *ngIf="getCountByType('Reminder') > 0">
-            <span class="summary-icon">⏰</span>
             <span class="summary-text">{{ getCountByType('Reminder') }} Reminder(s)</span>
         </div>
         <div class="summary-item" *ngIf="getCountByType('Broadcast') > 0">
-            <span class="summary-icon">📢</span>
             <span class="summary-text">{{ getCountByType('Broadcast') }} Broadcast(s)</span>
         </div>
     </div>
@@ -65,10 +56,10 @@
                 <div class="notification-content">
                     <div class="notification-top">
                         <span class="notification-type-badge">{{ notification.type }}</span>
-                        <span class="notification-time">{{ formatTimestamp(notification.sent_at) }}</span>
                     </div>
                     <span class="notification-message">{{ notification.message }}</span>
                     <span class="notification-activity">Activity: {{ getActivityName(notification.activity_id) }}</span>
+                    <span class="notification-time">{{ formatTimestamp(notification.sent_at) }}</span>
                 </div>
 
                 <button 

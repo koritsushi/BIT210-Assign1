@@ -198,7 +198,9 @@ export class Dashboard implements OnInit {
             type: type,
             message: message,
             sent_at: new Date(),
-            scheduled_at: new Date()
+            scheduled_at: new Date(),
+            repeat_intervel_minutes: 0,
+            repeat_until: new Date()
         };
 
         this.notificationService.createNotification(notification).subscribe({

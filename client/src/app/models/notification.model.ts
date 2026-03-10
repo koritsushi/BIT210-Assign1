@@ -9,5 +9,7 @@ export interface Notification {
         | "Broadcast";
     message: string;
     sent_at: Date;
-    scheduled_at: Date;
+    scheduled_at: Date | null;
+    repeat_intervel_minutes: number | null,
+    repeat_until: Date | null;
 }
