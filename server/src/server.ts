@@ -7,6 +7,7 @@ import { activityRouter } from "./activity.routes";
 import { registrationRouter } from "./registration.routes";
 import { ngoRouter } from "./ngo.routes";
 import { authRouter } from "./auth.routes";
+import { notificationRouter } from "./notification.routes";
 
 //dotenv.config();
 //const { ATLAS_URI } = process.env;
@@ -20,6 +21,7 @@ app.use("/users", userRouter);
 app.use("/activity", activityRouter);
 app.use("/registration", registrationRouter);
 app.use("/ngo", ngoRouter);
+app.use("/notification", notificationRouter);
 connectMockDB("Mock").then(() => { 
     app.listen(3000, () => {
         console.log(`Server running at http://localhost:3000...`);
