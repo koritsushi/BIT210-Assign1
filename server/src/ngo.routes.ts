@@ -1,7 +1,6 @@
 import * as express from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "./database";
-import { mockUsers } from "../mockdata";
 
 export const ngoRouter = express.Router();
 ngoRouter.use(express.json());

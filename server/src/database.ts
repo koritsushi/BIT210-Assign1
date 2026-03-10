@@ -3,13 +3,15 @@ import { User } from "./user";
 import { Activity } from "./activity";
 import { Registration } from "./registration";
 import { Ngo } from "./ngo";
-import { mockUsers, mockActivities, mockNgos, mockRegistrations } from "../mockdata";
+import { Notification } from "./notification";
+import { mockUsers, mockActivities, mockNgos, mockRegistrations, mockNotifications } from "../mockdata";
 
 export const collections: {
     users?: mongodb.Collection<User> | any;
     activites?: mongodb.Collection<Activity> | any;
     registrations?: mongodb.Collection<Registration> | any;
     ngos?: mongodb.Collection<Ngo> | any;
+    notifications?: mongodb.Collection<Notification> | any;
 } = {};
 
 export async function connectDB(uri: string) {
@@ -23,7 +25,8 @@ export async function connectDB(uri: string) {
     const activitesCollection = db.collection<Activity>("activity");
     const registrationsCollection = db.collection<Registration>("registration");
     const ngosCollection = db.collection<Ngo>("ngo");
-    
+    const notificationCollection = db.collection<Ngo>("notification");
+
     collections.users = userCollection;
     collections.activites = activitesCollection;
     collections.registrations = registrationsCollection;
@@ -35,6 +38,7 @@ export async function connectMockDB(uri: string) {
     collections.activites = new MockCollection<Activity>(mockActivities);
     collections.registrations = new MockCollection<Registration>(mockRegistrations);
     collections.ngos = new MockCollection<Ngo>(mockNgos);
+    collections.notifications = new MockCollection<Notification>(mockNotifications);
 }
 
 async function applySchemaValidation(db: mongodb.Db) {

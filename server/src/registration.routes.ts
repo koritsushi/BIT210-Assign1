@@ -1,7 +1,6 @@
 import * as express from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "./database";
-import { mockRegistrations } from "../mockdata";
 
 export const registrationRouter = express.Router();
 registrationRouter.use(express.json());

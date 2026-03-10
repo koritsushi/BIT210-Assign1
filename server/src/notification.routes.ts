@@ -2,24 +2,24 @@ import * as express from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "./database";
 
-export const userRouter = express.Router();
-userRouter.use(express.json());
+export const notificationRouter = express.Router();
+notificationRouter.use(express.json());
 
-userRouter.get("/", async(_req, res) => {
+notificationRouter.get("/", async(_req, res) => {
     try {
-        const users = await collections?.users?.find({}).toArray();
-        res.status(200).json(users);
+        const notifications = await collections?.notifications?.find({}).toArray();
+        res.status(200).json(notifications);
     } catch (error) {
         res.status(500).json(error instanceof Error ? 
             error.message : "Unkown Error");
     }
 })
 
-userRouter.get("/:id", async(req, res) => {
+notificationRouter.get("/:id", async(req, res) => {
     try {
         const id = req?.params?.id;
         const querry = { _id: new ObjectId(id) };
-        const user = await collections?.users?.findOne(querry);
+        const user = await collections?.notifications?.findOne(querry);
 
         if (user) {
             res.status(200).json(user);
@@ -32,15 +32,15 @@ userRouter.get("/:id", async(req, res) => {
     }
 })
 
-userRouter.post("/", async (req, res) => {
+notificationRouter.post("/", async (req, res) => {
     try {
-        const user = req.body;
-        const result = await collections?.users?.insertOne(user);
+        const notification = req.body;
+        const result = await collections?.notifications?.insertOne(notification);
 
         if (result?.acknowledged) {
-            res.status(201).json(`Created a new user: ID ${result.insertedId}.`);
+            res.status(201).json(`Created a new notification: ID ${result.insertedId}.`);
         } else {
-            res.status(500).json("Failed to create a new user.");
+            res.status(500).json("Failed to create a new notification.");
         }
     } catch (error) {
         console.error(error);
@@ -48,19 +48,19 @@ userRouter.post("/", async (req, res) => {
     }
 });
 
-userRouter.put("/:id", async (req, res) => {
+notificationRouter.put("/:id", async (req, res) => {
     try {
         const id = req?.params?.id;
-        const user = req.body;
+        const notification = req.body;
         const query = { _id: new ObjectId(id) };
-        const result = await collections?.users?.updateOne(query, { $set: user });
+        const result = await collections?.notifications?.updateOne(query, { $set: notification });
 
         if (result && result.matchedCount) {
-            res.status(200).json(`Updated an employee: ID ${id}.`);
+            res.status(200).json(`Updated an notification: ID ${id}.`);
         } else if (!result?.matchedCount) {
-            res.status(404).json(`Failed to find an employee: ID ${id}`);
+            res.status(404).json(`Failed to find an notification: ID ${id}`);
         } else {
-            res.status(304).json(`Failed to update an employee: ID ${id}`);
+            res.status(304).json(`Failed to update an notification: ID ${id}`);
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
@@ -69,18 +69,18 @@ userRouter.put("/:id", async (req, res) => {
     }
 });
 
-userRouter.delete("/:id", async (req, res) => {
+notificationRouter.delete("/:id", async (req, res) => {
     try {
         const id = req?.params?.id;
         const query = { _id: new ObjectId(id) };
-        const result = await collections?.users?.deleteOne(query);
+        const result = await collections?.notifications?.deleteOne(query);
 
         if (result && result.deletedCount) {
-            res.status(202).json(`Removed an employee: ID ${id}`);
+            res.status(202).json(`Removed an notification: ID ${id}`);
         } else if (!result) {
-            res.status(400).json(`Failed to remove an employee: ID ${id}`);
+            res.status(400).json(`Failed to remove an notification: ID ${id}`);
         } else if (!result.deletedCount) {
-            res.status(404).json(`Failed to find an employee: ID ${id}`);
+            res.status(404).json(`Failed to find an notification: ID ${id}`);
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
