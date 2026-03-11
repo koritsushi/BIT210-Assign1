@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject } from 'rxjs';
 import { User } from '../models/user.model';
 import {
   ActivityCheckInViewData,
@@ -18,7 +19,8 @@ const DELETED_ACTIVITY_IDS_KEY = 'adminDeletedActivityIds';
   providedIn: 'root',
 })
 export class ActivityCheckInService {
-  readonly viewData = signal<ActivityCheckInViewData | null>(null);
+  private viewDataSubject = new BehaviorSubject<ActivityCheckInViewData | null>(null);
+  viewData$ = this.viewDataSubject.asObservable();
 
   constructor(private httpClient: HttpClient) {}
 
@@ -51,7 +53,7 @@ export class ActivityCheckInService {
                       checkInStatusMap,
                     );
 
-                    this.viewData.set({
+                    this.viewDataSubject.next({
                       activityIdMap: optionsData.activityIdMap,
                       activityMeta: optionsData.activityMeta,
                       activityOptions: optionsData.activityOptions,
@@ -59,16 +61,16 @@ export class ActivityCheckInService {
                       records,
                     });
                   },
-                  error: () => this.viewData.set(null),
+                  error: () => this.viewDataSubject.next(null),
                 });
               },
-              error: () => this.viewData.set(null),
+              error: () => this.viewDataSubject.next(null),
             });
           },
-          error: () => this.viewData.set(null),
+          error: () => this.viewDataSubject.next(null),
         });
       },
-      error: () => this.viewData.set(null),
+      error: () => this.viewDataSubject.next(null),
     });
   }
 
@@ -79,75 +81,6 @@ export class ActivityCheckInService {
     const date = parsed.toISOString().slice(0, 10);
     const time = parsed.toTimeString().slice(0, 5);
     return `${date} ${time}`;
-  }
-
-  filterRecords(records: CheckInRecord[], selectedActivity: string): CheckInRecord[] {
-    if (!selectedActivity) return records;
-    return records.filter((record) => record.activity === selectedActivity);
-  }
-
-  resolveQrData(
-    selectedActivity: string,
-    activityIdMap: Record<string, string>,
-    activityQrIndexMap: Record<string, string>,
-  ): { generatedActivityId: string | null; generatedActivityName: string | null } {
-    const activityId = activityIdMap[selectedActivity];
-    if (!activityId) {
-      return { generatedActivityId: null, generatedActivityName: null };
-    }
-
-    return {
-      generatedActivityId: activityQrIndexMap[selectedActivity] ?? null,
-      generatedActivityName: selectedActivity,
-    };
-  }
-
-  calculateAttendanceSummary(records: CheckInRecord[]): {
-    totalEmployees: number;
-    attendedCount: number;
-    absentCount: number;
-    attendanceRate: number;
-  } {
-    const totalEmployees = records.length;
-    const attendedCount = records.filter((record) => record.status === 'Attended').length;
-    const absentCount = records.filter((record) => record.status === 'Absent').length;
-    const attendanceRate = totalEmployees === 0 ? 0 : Math.round((attendedCount / totalEmployees) * 100);
-
-    return {
-      totalEmployees,
-      attendedCount,
-      absentCount,
-      attendanceRate,
-    };
-  }
-
-  resolveQrImageUrl(qrCodeNumber: string): string {
-    const id = Number(qrCodeNumber);
-    if (!Number.isInteger(id) || id < 1 || id > 10) return '';
-    return `/qrcodes/${id}.png`;
-  }
-
-  updateRecordStatus(records: CheckInRecord[], recordId: string, status: CheckInStatus): CheckInRecord[] {
-    return records.map((record) => {
-      if (record.id !== recordId) return record;
-
-      return {
-        ...record,
-        status,
-        checkInTime: status === 'Attended' ? this.formatDateTime(new Date()) : record.checkInTime,
-      };
-    });
-  }
-
-  persistCheckInStatus(recordId: string, status: CheckInStatus) {
-    return this.httpClient.put(
-      `${API_URL}/registration/${recordId}`,
-      {
-        status,
-        updated_at: new Date(),
-      },
-      { responseType: 'text' },
-    );
   }
 
   private buildActivityOptions(

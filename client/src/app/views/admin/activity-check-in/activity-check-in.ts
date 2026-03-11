@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, effect, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   CheckInRecord,
@@ -14,98 +14,127 @@ import { ActivityCheckInService } from '../../../services/activity-check-in.serv
   styleUrl: './activity-check-in.css',
 })
 export class ActivityCheckIn implements OnInit {
-  readonly selectedActivity = signal('');
-  readonly generatedActivityId = signal<string | null>(null);
-  readonly generatedActivityName = signal<string | null>(null);
-  readonly records = signal<CheckInRecord[]>([]);
-  readonly showReport = signal(false);
-  readonly activityOptions = computed(
-    () => this.activityCheckInService.viewData()?.activityOptions ?? [],
-  );
-  readonly filteredRecords = computed(
-    () => this.activityCheckInService.filterRecords(this.records(), this.selectedActivity()),
-  );
-  readonly attendanceSummary = computed(
-    () => this.activityCheckInService.calculateAttendanceSummary(this.filteredRecords()),
-  );
-  readonly reportActivityName = computed(
-    () => this.selectedActivity() || 'All Activities',
-  );
-  readonly reportDate = computed(
-    () => this.activityMeta()[this.reportActivityName()]?.date ?? 'N/A',
-  );
-  readonly reportLocation = computed(
-    () => this.activityMeta()[this.reportActivityName()]?.location ?? 'N/A',
-  );
-  readonly qrCodeNumber = computed(() => {
-    const activityName = this.generatedActivityName();
-    if (!activityName) return '-';
-    return this.activityQrIndexMap()[activityName] ?? '-';
-  });
-  readonly qrImageUrl = computed(
-    () => this.activityCheckInService.resolveQrImageUrl(this.qrCodeNumber()),
-  );
-  readonly hasQrImage = computed(() => this.qrImageUrl() !== '');
-  readonly qrActivityName = computed(
-    () => this.generatedActivityName() ?? this.selectedActivity(),
-  );
+  selectedActivity = '';
+  generatedActivityId: string | null = null;
+  generatedActivityName: string | null = null;
 
-  private readonly activityMeta = signal<Record<string, { date: string; location: string }>>({});
-  private readonly activityIdMap = signal<Record<string, string>>({});
-  private readonly activityQrIndexMap = signal<Record<string, string>>({});
+  activityOptions: string[] = [];
+  records: CheckInRecord[] = [];
+  showReport = false;
+
+  private readonly activityMeta: Record<string, { date: string; location: string }> = {};
+  private readonly activityIdMap: Record<string, string> = {};
+  private readonly activityQrIndexMap: Record<string, string> = {};
   private readonly checkInStatusMap: Record<string, CheckInStatus> = {};
 
-  constructor(private activityCheckInService: ActivityCheckInService) {
-    effect(() => {
-      const data = this.activityCheckInService.viewData();
+  constructor(
+    private activityCheckInService: ActivityCheckInService,
+    private cdr: ChangeDetectorRef,
+  ) {}
+
+  ngOnInit(): void {
+    this.activityCheckInService.viewData$.subscribe((data) => {
       if (!data) {
-        this.activityMeta.set({});
-        this.activityIdMap.set({});
-        this.activityQrIndexMap.set({});
-        this.records.set([]);
+        this.activityOptions = [];
+        this.records = [];
+        this.cdr.detectChanges();
         return;
       }
 
-      this.activityMeta.set(data.activityMeta);
-      this.activityIdMap.set(data.activityIdMap);
-      this.activityQrIndexMap.set(data.activityQrIndexMap);
-      this.records.set(data.records);
-
-      const selectedActivity = this.selectedActivity();
-      if (!selectedActivity || !data.activityOptions.includes(selectedActivity)) {
-        this.selectedActivity.set(data.activityOptions[0] ?? '');
+      this.syncLookupMap(this.activityIdMap, data.activityIdMap);
+      this.syncLookupMap(this.activityQrIndexMap, data.activityQrIndexMap);
+      this.syncLookupMap(this.activityMeta, data.activityMeta);
+      this.activityOptions = data.activityOptions;
+      this.records = data.records;
+      if (!this.selectedActivity || !this.activityOptions.includes(this.selectedActivity)) {
+        this.selectedActivity = this.activityOptions[0] ?? '';
       }
+      this.cdr.detectChanges();
     });
+    this.loadCheckInData();
   }
 
-  ngOnInit(): void {
-    this.activityCheckInService.loadCheckInData(this.selectedActivity(), this.checkInStatusMap);
+  get filteredRecords(): CheckInRecord[] {
+    if (!this.selectedActivity) return this.records;
+    return this.records.filter((record) => record.activity === this.selectedActivity);
   }
 
   generateReport(): void {
-    this.showReport.set(true);
+    this.showReport = true;
   }
 
   generateQrCode(): void {
-    const qrData = this.activityCheckInService.resolveQrData(
-      this.selectedActivity(),
-      this.activityIdMap(),
-      this.activityQrIndexMap(),
-    );
-    this.generatedActivityId.set(qrData.generatedActivityId);
-    this.generatedActivityName.set(qrData.generatedActivityName);
+    const activityId = this.activityIdMap[this.selectedActivity];
+    if (!activityId) return;
+    this.generatedActivityId = this.activityQrIndexMap[this.selectedActivity] ?? null;
+    this.generatedActivityName = this.selectedActivity;
+  }
+
+  get reportActivityName(): string {
+    return this.selectedActivity || 'All Activities';
+  }
+
+  get reportDate(): string {
+    return this.activityMeta[this.reportActivityName]?.date ?? 'N/A';
+  }
+
+  get reportLocation(): string {
+    return this.activityMeta[this.reportActivityName]?.location ?? 'N/A';
+  }
+
+  get totalEmployees(): number {
+    return this.filteredRecords.length;
+  }
+
+  get attendedCount(): number {
+    return this.filteredRecords.filter((record) => record.status === 'Attended').length;
+  }
+
+  get absentCount(): number {
+    return this.filteredRecords.filter((record) => record.status === 'Absent').length;
+  }
+
+  get attendanceRate(): number {
+    if (!this.filteredRecords.length) return 0;
+    return Math.round((this.attendedCount / this.filteredRecords.length) * 100);
+  }
+
+  get qrCodeNumber(): string {
+    if (!this.generatedActivityName) return '-';
+    return this.activityQrIndexMap[this.generatedActivityName] ?? '-';
+  }
+
+  get qrImageUrl(): string {
+    const id = Number(this.qrCodeNumber);
+    if (!Number.isInteger(id) || id < 1 || id > 10) return '';
+    return `/qrcodes/${id}.png`;
+  }
+
+  get hasQrImage(): boolean {
+    return this.qrImageUrl !== '';
+  }
+
+  get qrActivityName(): string {
+    return this.generatedActivityName ?? this.selectedActivity;
   }
 
   onStatusChange(recordId: string, status: CheckInStatus): void {
-    const previousRecords = this.records();
     this.checkInStatusMap[recordId] = status;
-    this.records.set(this.activityCheckInService.updateRecordStatus(previousRecords, recordId, status));
+    const record = this.records.find((item) => item.id === recordId);
+    if (record) {
+      record.status = status;
+      if (status === 'Attended') {
+        record.checkInTime = this.activityCheckInService.formatDateTime(new Date());
+      }
+    }
+  }
 
-    this.activityCheckInService.persistCheckInStatus(recordId, status).subscribe({
-      error: () => {
-        delete this.checkInStatusMap[recordId];
-        this.records.set(previousRecords);
-      },
-    });
+  private loadCheckInData(): void {
+    this.activityCheckInService.loadCheckInData(this.selectedActivity, this.checkInStatusMap);
+  }
+
+  private syncLookupMap<T>(target: Record<string, T>, source: Record<string, T>): void {
+    for (const key of Object.keys(target)) delete target[key];
+    Object.assign(target, source);
   }
 }
