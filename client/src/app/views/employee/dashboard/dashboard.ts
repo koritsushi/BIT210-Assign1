@@ -197,10 +197,13 @@ export class Dashboard implements OnInit {
             activity_id: activityId,
             type: type,
             message: message,
+            is_broadcast: false,        // targeted notification, not broadcast
+            is_read_by: [],             // not yet read
+            deleted_by: [],             // not deleted
             sent_at: new Date(),
-            scheduled_at: new Date(),
-            repeat_intervel_minutes: 0,
-            repeat_until: new Date()
+            scheduled_at: null,
+            repeat_interval_minutes: null,
+            repeat_until: null
         };
 
         this.notificationService.createNotification(notification).subscribe({

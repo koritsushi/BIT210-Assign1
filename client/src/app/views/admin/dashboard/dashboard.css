@@ -4,9 +4,11 @@
 }
 
 .dashboard-card {
-  width: min(1320px, calc(100vw - 24px));
-  margin-left: 50%;
-  transform: translateX(-50%);
+    width: 100%;          /* fill content area */
+    max-width: 1320px;    /* cap at 1320px */
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
 }
 
 .toolbar,
