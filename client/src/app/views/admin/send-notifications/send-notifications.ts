@@ -39,6 +39,8 @@ interface NotificationFormValue {
   scheduledAt: string;
   repeatIntervelMinutes: number | null;
   repeatUntil: string;
+  enableScheduleTime: boolean;
+  enableIntervalTime: boolean;
 }
 
 @Component({
@@ -65,6 +67,9 @@ export class SendNotifications implements OnInit, OnDestroy {
   scheduledAt = '';
   repeatIntervelMinutes: number | null = null;
   repeatUntil = '';
+
+  enableScheduleTime = false;
+  enableIntervalTime = false;
 
   showBroadcastPanel = false;
   isBroadcastMode = false;
@@ -107,6 +112,8 @@ export class SendNotifications implements OnInit, OnDestroy {
     this.isBroadcastMode = false;
     this.type = 'Reminder';
     this.audience = 'Employees';
+    this.enableScheduleTime = false;
+    this.enableIntervalTime = false;
     this.feedbackMessage = '';
     this.cdr.detectChanges();
   }
@@ -128,6 +135,8 @@ export class SendNotifications implements OnInit, OnDestroy {
     }
 
     if (this.type !== 'Reminder') {
+      this.enableScheduleTime = false;
+      this.enableIntervalTime = false;
       this.repeatIntervelMinutes = null;
       this.repeatUntil = '';
       this.scheduledAt = '';
@@ -142,6 +151,8 @@ export class SendNotifications implements OnInit, OnDestroy {
     this.type = 'Broadcast';
     this.audience = 'All';
     this.selectedActivityId = '';
+    this.enableScheduleTime = false;
+    this.enableIntervalTime = false;
     this.repeatIntervelMinutes = null;
     this.repeatUntil = '';
     this.feedbackMessage = '';
@@ -154,6 +165,8 @@ export class SendNotifications implements OnInit, OnDestroy {
     }
 
     if (this.type !== 'Reminder') {
+      this.enableScheduleTime = false;
+      this.enableIntervalTime = false;
       this.repeatIntervelMinutes = null;
       this.repeatUntil = '';
       this.scheduledAt = '';
@@ -172,6 +185,8 @@ export class SendNotifications implements OnInit, OnDestroy {
     this.scheduledAt = formValue.scheduledAt;
     this.repeatIntervelMinutes = formValue.repeatIntervelMinutes;
     this.repeatUntil = formValue.repeatUntil;
+    this.enableScheduleTime = formValue.enableScheduleTime;
+    this.enableIntervalTime = formValue.enableIntervalTime;
   }
 
   onFormAction(action: 'sendNow' | 'schedule' | 'clear' | 'close'): void {
@@ -216,6 +231,13 @@ export class SendNotifications implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.enableScheduleTime) {
+      this.feedbackType = 'error';
+      this.feedbackMessage = 'Please tick Enable Schedule Time first.';
+      this.cdr.detectChanges();
+      return;
+    }
+
     if (!this.scheduledAt) {
       this.feedbackType = 'error';
       this.feedbackMessage = 'Please select a schedule date and time.';
@@ -250,7 +272,7 @@ export class SendNotifications implements OnInit, OnDestroy {
     }
 
     const needsReminderInterval =
-      !this.isBroadcastMode && this.type === 'Reminder';
+      !this.isBroadcastMode && this.type === 'Reminder' && this.enableIntervalTime;
 
     if (
       needsReminderInterval &&
@@ -278,9 +300,10 @@ export class SendNotifications implements OnInit, OnDestroy {
     }
 
     const now = new Date();
-    const targetDate = sendNow ? now : new Date(this.scheduledAt);
+    const targetDate =
+      !sendNow && this.enableScheduleTime ? new Date(this.scheduledAt) : now;
 
-    if (!sendNow && isNaN(targetDate.getTime())) {
+    if (!sendNow && this.enableScheduleTime && isNaN(targetDate.getTime())) {
       this.feedbackType = 'error';
       this.feedbackMessage = 'Invalid schedule date/time.';
       this.cdr.detectChanges();
@@ -305,7 +328,8 @@ export class SendNotifications implements OnInit, OnDestroy {
       is_read: false,
       is_broadcast: this.isBroadcastMode,
       sent_at: sendNow ? now.toISOString() : null,
-      scheduled_at: sendNow ? null : targetDate.toISOString(),
+      scheduled_at:
+        !sendNow && this.enableScheduleTime ? targetDate.toISOString() : null,
       repeat_intervel_minutes:
         needsReminderInterval && this.repeatIntervelMinutes !== null
           ? Number(this.repeatIntervelMinutes)
@@ -390,6 +414,8 @@ export class SendNotifications implements OnInit, OnDestroy {
     this.scheduledAt = '';
     this.repeatIntervelMinutes = null;
     this.repeatUntil = '';
+    this.enableScheduleTime = false;
+    this.enableIntervalTime = false;
     this.feedbackMessage = '';
   }
 
