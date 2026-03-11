@@ -15,7 +15,6 @@
           <th>Offered/Taken/Remaining</th>
           <th>Cut-off</th>
           <th>Status</th>
-          <th>Participants</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -43,12 +42,6 @@
                 [class.badge-closed]="getStatus(a) === 'Closed'">
                 {{ getStatus(a) }}
               </span>
-            </td>
-            <td>
-              <a class="btn small participant-link" [routerLink]="['/admin/dashboard', getActivityId(a), 'participants']">
-                View<br>Participants
-              </a>
-              <div class="participant-count">{{ getParticipantCount(a) }} registered</div>
             </td>
             <td class="actions">
               <button class="btn small" (click)="edit(a)">Edit</button>

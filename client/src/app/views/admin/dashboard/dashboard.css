@@ -164,21 +164,7 @@ td:nth-child(9) {
   text-align: center;
 }
 
-.participant-link {
-  line-height: 1.2;
-  text-align: center;
-  min-width: 102px;
-  width: auto;
-  max-width: 102px;
-  padding: 6px 8px;
-  display: inline-block;
-}
 
-.participant-count {
-  margin-top: 6px;
-  color: #6b7280;
-  font-size: 12px;
-}
 
 .grid {
   display: grid;

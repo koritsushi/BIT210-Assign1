@@ -1,7 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { CheckInRecord, CheckInStatus } from '../../../models/checkin.model';
+import { CheckInRecord, CheckInStatus, ActivityMeta } from '../../../models/checkin.model';
+import { Activity } from '../../../models/activity.model';
+import { Ngo } from '../../../models/ngo.model';
+import { Registration } from '../../../models/registration.model';
+import { User } from '../../../models/user.model';
 import { ActivityService } from '../../../services/activity.service';
 import { CheckinService } from '../../../services/checkin.service';
 import { NgoService } from '../../../services/ngo.service';
@@ -31,6 +35,7 @@ export class ActivityCheckIn implements OnInit {
   selectedActivity = '';
   showReport = false;
 
+  // store check-in status and time updates locally (casue mock data)
   private readonly checkInStatusMap: Record<string, CheckInStatus> = {};
   private readonly checkInTimeMap: Record<string, string> = {};
 
@@ -38,12 +43,12 @@ export class ActivityCheckIn implements OnInit {
     this.loadData();
   }
 
-  get activityOptions(): string[] {
-    return this.checkinService.getActivityOptions(this.activities(), this.ngos());
+  get activityOptions(): string[] {// Generate unique activity options for dropdown based on activities and NGOs
+    return getActivityOptions(this.activities(), this.ngos());
   }
 
   get records(): CheckInRecord[] {
-    return this.checkinService.buildRecords(
+    return buildRecords(
       this.activities(),
       this.registrations(),
       this.users(),
@@ -75,14 +80,16 @@ export class ActivityCheckIn implements OnInit {
     return this.selectedActivity || this.activityOptions[0] || 'All Activities';
   }
 
+  // report header getters
   get reportDate(): string {
-    return this.checkinService.getActivityMeta(this.reportActivityName, this.activities(), this.ngos()).date;
+    return getActivityMeta(this.reportActivityName, this.activities(), this.ngos()).date;
   }
 
   get reportLocation(): string {
-    return this.checkinService.getActivityMeta(this.reportActivityName, this.activities(), this.ngos()).location;
+    return getActivityMeta(this.reportActivityName, this.activities(), this.ngos()).location;
   }
 
+  // report content getters
   get totalEmployees(): number {
     return this.filteredRecords.length;
   }
@@ -100,6 +107,9 @@ export class ActivityCheckIn implements OnInit {
     return Math.round((this.attendedCount / this.filteredRecords.length) * 100);
   }
 
+
+
+  // QR code related getters
   get qrCodeNumber(): string {
     return this.checkinService.getQrCodeNumber(this.currentQrActivityName, this.activityOptions);
   }
@@ -116,6 +126,8 @@ export class ActivityCheckIn implements OnInit {
     return this.currentQrActivityName || 'N/A';
   }
 
+
+
   onStatusChange(recordId: string, status: CheckInStatus): void {
     const registration = this.checkinService.findRegistration(this.registrations(), recordId);
     if (!registration?._id) return;
@@ -124,8 +136,8 @@ export class ActivityCheckIn implements OnInit {
       ?? (registration.status === 'Attended' ? 'Attended' : 'Absent');
     const previousTime = this.checkInTimeMap[recordId];
     const nextTime = status === 'Attended'
-      ? this.checkinService.formatDateTime(new Date())
-      : this.checkinService.formatDateTime(registration.updated_at || registration.registered_at);
+      ? formatDateTime(new Date())
+      : formatDateTime(registration.updated_at || registration.registered_at);
 
     this.checkInStatusMap[recordId] = status;
     this.checkInTimeMap[recordId] = nextTime;
@@ -148,14 +160,127 @@ export class ActivityCheckIn implements OnInit {
     });
   }
 
-  private loadData(): void {
+  private loadData(): void { // Load check-in list data for the component
     this.activityService.getActivities();
     this.registrationService.getRegistrations();
     this.userService.getUsers();
     this.ngoService.getNgos();
   }
 
-  private get currentQrActivityName(): string {
+  private get currentQrActivityName(): string { // Determine the activity name for QR code generation based on selection
     return this.currentActivitySelection;
   }
+}
+
+// ---------------------------------------------------------------------------
+// copied helpers from checkin.service.ts (everything except lines 68-79)
+
+export function getActivityOptions(activities: Activity[], ngos: Ngo[]): string[] { // Generate unique activity options based on activity names and NGO names
+    return [...new Set(activities.map((activity) => getActivityName(activity, ngos)))]; 
+}
+
+export function buildRecords(
+    activities: Activity[],
+    registrations: Registration[],
+    users: User[],
+    ngos: Ngo[],
+    checkInStatusMap: Record<string, CheckInStatus>,
+    checkInTimeMap: Record<string, string>,
+): CheckInRecord[] {
+    const activityMap = new Map<string, Activity>();
+    activities.forEach((activity) => activityMap.set(getActivityId(activity), activity));
+
+    const userMap = new Map<string, User>();
+    users.forEach((user) => userMap.set(toText(user._id), user));
+
+    return registrations
+      .filter((registration) => registration.status !== 'Cancelled')
+      .map((registration) => {
+        const activity = activityMap.get(toText(registration.activity_id));
+        const user = userMap.get(toText(registration.user_id));
+        if (!activity || !user) return null;
+
+        const recordId = getRecordId(registration);
+        const status = checkInStatusMap[recordId]
+          ?? (registration.status === 'Attended' ? 'Attended' : 'Absent');
+
+        return {
+          id: recordId,
+          name: user.name,
+          department: user.department,
+          checkInTime: checkInTimeMap[recordId] ?? 
+          formatDateTime(registration.updated_at || registration.registered_at),
+          status,
+          activity: getActivityName(activity, ngos),
+        };
+      })
+      .filter((record): record is CheckInRecord => !!record); 
+}
+
+export function getActivityMeta(activityName: string, activities: Activity[], ngos: Ngo[]): ActivityMeta { // for report header, get date and location of the activity
+    const activity = activities.find((item) => getActivityName(item, ngos) === activityName);
+    if (!activity) {
+      return { date: 'N/A', location: 'N/A' };
+    }
+
+    return {
+      date: toDateOnly(activity.date),
+      location: getActivityLocation(activity, ngos),
+    };
+}
+
+// format date time 
+export function formatDateTime(value: string | Date): string {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return toText(value);
+
+    const date = parsed.toISOString().slice(0, 10);
+    const time = parsed.toTimeString().slice(0, 5);
+    return `${date} ${time}`;
+}
+
+// generate activity name based on activity name, ngo name, or fallback to id
+export function getActivityName(activity: Activity, ngos: Ngo[]): string {
+    const activityName = toText(activity.name);
+    if (activityName) return activityName;
+
+    const ngoName = toText(activity.ngo_name);
+    if (ngoName) return ngoName;
+
+    const ngo = getNgo(activity.ngo_id, ngos);
+    if (ngo?.name) return ngo.name;
+
+    return `Activity ${getActivityId(activity).slice(-4)}`;
+}
+
+// generate activity id based on activity _id or fallback to random string
+export function getActivityId(activity: Activity): string {
+    return toText(activity._id);
+}
+
+// getters
+function getActivityLocation(activity: Activity, ngos: Ngo[]): string {
+    const location = toText(activity.location);
+    if (location) return location;
+
+    return getNgo(activity.ngo_id, ngos)?.location ?? 'N/A';
+}
+
+function getNgo(ngoId: string, ngos: Ngo[]): Ngo | undefined {
+    const targetId = toText(ngoId);
+    return ngos.find((ngo) => toText(ngo._id) === targetId);
+}
+
+// Generate a unique record ID based on registration ID or combination of activity and user IDs
+function getRecordId(registration: Registration): string {
+    return toText(registration._id) || `${registration.activity_id}-${registration.user_id}`;
+}
+  
+// Convert date to YYYY-MM-DD format for report header
+function toDateOnly(value: string | Date): string {
+    return toText(value).replaceAll('/', '-').split('T')[0] ?? 'N/A';
+}
+
+function toText(value: unknown): string {
+    return String(value ?? '').trim();
 }
