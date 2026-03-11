@@ -1,8 +1,8 @@
-import { User } from "./src/user";
-import { Ngo } from "./src/ngo";
-import { Activity } from "./src/activity";
-import { Registration } from "./src/registration";
-import { Notification } from "./src/notification";
+import { User } from "./src/modal/user";
+import { Ngo } from "./src/modal/ngo";
+import { Activity } from "./src/modal/activity";
+import { Registration } from "./src/modal/registration";
+import { Notification } from "./src/modal/notification";
 import { ObjectId } from "mongodb";
 
 // --- Pre-defined IDs for relational linking ---
