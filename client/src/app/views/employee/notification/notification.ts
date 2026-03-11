@@ -30,61 +30,102 @@ export class NotificationComponent implements OnInit {
         this.activityService.getActivities();
     }
 
-    // --- Get user's notifications ---
+    // --- Get user's visible notifications ---
+    // Includes: targeted to user + broadcasts
+    // Excludes: soft deleted by user
     getUserNotifications(): Notification[] {
         const userId = this.authService.getUserId();
-        if (!userId) {
-            console.log(userId)
-            return [];
-        }
+        if (!userId) return [];
+
         return this.notifications()
-            .filter(n => n.user_id?.toString() === userId?.toString())
+            .filter(n =>
+                // not soft deleted by this user
+                !n.deleted_by?.includes(userId) &&
+                // targeted to this user OR broadcast to all
+                (n.is_broadcast === true || n.user_id?.toString() === userId.toString())
+            )
             .sort((a, b) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime());
     }
 
     // --- Get activity name by activity_id ---
-    getActivityName(activityId: string): string {
+    getActivityName(activityId: string | undefined): string {
+        if (!activityId) return 'General';
         const activity = this.activities().find(a => a._id?.toString() === activityId?.toString());
         return activity?.name || 'Unknown Activity';
     }
 
-    // --- Clear all notifications for the user ---
+    // --- Soft delete all visible notifications for the user ---
     clearNotifications() {
+        const userId = this.authService.getUserId();
+        if (!userId) return;
+
         const userNotifications = this.getUserNotifications();
-        
         if (userNotifications.length === 0) return;
 
-        // Delete each notification
-        let deletedCount = 0;
+        let completedCount = 0;
         userNotifications.forEach(notification => {
             if (notification._id) {
-                this.notificationService.deleteNotification(notification._id).subscribe({
-                    next: () => {
-                        deletedCount++;
-                        if (deletedCount === userNotifications.length) {
-                            this.notificationService.getNotifications();
-                        }
-                    },
-                    error: (err) => {
-                        console.error('Failed to delete notification:', err);
+                this.softDeleteNotification(notification._id, userId, () => {
+                    completedCount++;
+                    if (completedCount === userNotifications.length) {
+                        this.notificationService.getNotifications();
                     }
                 });
             }
         });
     }
 
-    // --- Delete single notification ---
+    // --- Soft delete single notification ---
     deleteNotification(notification: Notification) {
-        if (!notification._id) return;
+        const userId = this.authService.getUserId();
+        if (!notification._id || !userId) return;
 
-        this.notificationService.deleteNotification(notification._id).subscribe({
-            next: () => {
-                this.notificationService.getNotifications();
-            },
-            error: (err) => {
-                console.error('Failed to delete notification:', err);
-            }
+        this.softDeleteNotification(notification._id, userId, () => {
+            this.notificationService.getNotifications();
         });
+    }
+
+    // --- Helper: push userId into deleted_by via PUT ---
+    private softDeleteNotification(notificationId: string, userId: string, onSuccess: () => void) {
+        // Get current notification to update deleted_by array
+        const notification = this.notifications().find(n => n._id === notificationId);
+        if (!notification) return;
+
+        const updatedNotification: Notification = {
+            ...notification,
+            deleted_by: [...(notification.deleted_by || []), userId]
+        };
+
+        this.notificationService.updateNotification(notificationId, updatedNotification).subscribe({
+            next: () => onSuccess(),
+            error: (err) => console.error('Failed to soft delete notification:', err)
+        });
+    }
+
+    // --- Mark notification as read ---
+    markAsRead(notification: Notification) {
+        const userId = this.authService.getUserId();
+        if (!notification._id || !userId) return;
+
+        // Only update if not already read
+        if (notification.is_read_by?.includes(userId)) return;
+
+        const updatedNotification: Notification = {
+            ...notification,
+            is_read_by: [...(notification.is_read_by || []), userId]
+        };
+
+        this.notificationService.updateNotification(notification._id, updatedNotification).subscribe({
+            next: () => this.notificationService.getNotifications(),
+            error: (err) => console.error('Failed to mark as read:', err)
+        });
+    }
+
+    // --- Check if current user has read notification ---
+    isRead(notification: Notification): boolean {
+        const userId = this.authService.getUserId();
+        if (!userId) return false;
+        return notification.is_read_by?.includes(userId) ?? false;
     }
 
     // --- Toggle collapse ---
@@ -129,7 +170,7 @@ export class NotificationComponent implements OnInit {
         if (diffMins < 60) return `${diffMins}m ago`;
         if (diffHours < 24) return `${diffHours}h ago`;
         if (diffDays < 7) return `${diffDays}d ago`;
-        
+
         return notificationDate.toLocaleDateString();
     }
 

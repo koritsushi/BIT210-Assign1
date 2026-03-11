@@ -70,12 +70,13 @@ export const mockNotifications: Notification[] = [
         activity_id: activityId1,
         type: "Registration",
         message: "You have successfully registered for Beach Cleaning on 2026-04-10.",
-        is_read: false,
         is_broadcast: false,
+        is_read_by: [],
+        deleted_by: [],
         sent_at: new Date("2026-03-01T10:00:00"),
         scheduled_at: new Date("2026-03-01T10:00:00"),
-        repeat_intervel_minutes: 0,
-        repeat_until: new Date("2026-03-01T10:00:00")
+        repeat_interval_minutes: null,
+        repeat_until: null,
     },
 
     // --- Cancellation notification ---
@@ -85,12 +86,13 @@ export const mockNotifications: Notification[] = [
         activity_id: activityId2,
         type: "Cancellation",
         message: "Your registration for Food Bank Packing has been cancelled.",
-        is_read: true,
         is_broadcast: false,
+        is_read_by: [userId2.toString()],     // user2 already read it
+        deleted_by: [],
         sent_at: new Date("2026-03-05T09:00:00"),
         scheduled_at: new Date("2026-03-05T09:00:00"),
-        repeat_intervel_minutes: 0,
-        repeat_until: new Date("2026-03-05T09:00:00"),
+        repeat_interval_minutes: null,
+        repeat_until: null,
     },
 
     // --- Scheduled reminder — 1 week before ---
@@ -100,12 +102,13 @@ export const mockNotifications: Notification[] = [
         activity_id: activityId1,
         type: "Reminder",
         message: "Reminder: Beach Cleaning is coming up in 1 week on 2026-04-10. Please be prepared!",
-        is_read: false,
         is_broadcast: false,
+        is_read_by: [],
+        deleted_by: [],
         sent_at: new Date("2026-04-03T08:00:00"),
         scheduled_at: new Date("2026-04-03T08:00:00"),
-        repeat_intervel_minutes: 0,
-        repeat_until: new Date("2026-03-05T09:00:00"),
+        repeat_interval_minutes: null,
+        repeat_until: null,
     },
 
     // --- Scheduled reminder — 3 days before ---
@@ -115,12 +118,13 @@ export const mockNotifications: Notification[] = [
         activity_id: activityId1,
         type: "Reminder",
         message: "Reminder: Beach Cleaning is in 3 days on 2026-04-10. Check your schedule!",
-        is_read: false,
         is_broadcast: false,
+        is_read_by: [userId1.toString()],     // user1 already read it
+        deleted_by: [],
         sent_at: new Date("2026-04-07T08:00:00"),
         scheduled_at: new Date("2026-04-07T08:00:00"),
-        repeat_intervel_minutes: 0,
-        repeat_until: new Date("2026-03-07T08:00:00"),
+        repeat_interval_minutes: null,
+        repeat_until: null,
     },
 
     // --- Scheduled reminder — 1 day before ---
@@ -130,12 +134,13 @@ export const mockNotifications: Notification[] = [
         activity_id: activityId1,
         type: "Reminder",
         message: "Reminder: Beach Cleaning is TOMORROW on 2026-04-10. Don't forget to bring your QR code!",
-        is_read: false,
         is_broadcast: false,
+        is_read_by: [],
+        deleted_by: [userId1.toString()],     // user1 soft deleted this
         sent_at: new Date("2026-04-09T08:00:00"),
         scheduled_at: new Date("2026-04-09T08:00:00"),
-        repeat_intervel_minutes: 0,
-        repeat_until: new Date("2026-04-09T08:00:00"),
+        repeat_interval_minutes: 60,          // repeat every 60 mins
+        repeat_until: new Date("2026-04-09T20:00:00"),
     },
 
     // --- Activity update ---
@@ -145,12 +150,13 @@ export const mockNotifications: Notification[] = [
         activity_id: activityId2,
         type: "Update",
         message: "Food Bank Packing activity details have been updated. New location: PJ Community Center Level 2.",
-        is_read: false,
         is_broadcast: false,
+        is_read_by: [],
+        deleted_by: [],
         sent_at: new Date("2026-03-15T14:00:00"),
         scheduled_at: new Date("2026-03-15T14:00:00"),
-        repeat_intervel_minutes: null,
-        repeat_until: null
+        repeat_interval_minutes: null,
+        repeat_until: null,
     },
 
     // --- Urgent update — last available slots ---
@@ -160,26 +166,28 @@ export const mockNotifications: Notification[] = [
         activity_id: activityId2,
         type: "Update",
         message: "Urgent: Only 2 slots remaining for Food Bank Packing on 2026-04-10. Register now!",
-        is_read: false,
         is_broadcast: false,
+        is_read_by: [],
+        deleted_by: [],
         sent_at: new Date("2026-03-20T10:00:00"),
         scheduled_at: new Date("2026-03-20T10:00:00"),
-        repeat_intervel_minutes: null,
-        repeat_until: null
+        repeat_interval_minutes: null,
+        repeat_until: null,
     },
 
     // --- Admin broadcast to all employees ---
     {
         _id: notification8,
-        user_id: undefined,            // no specific user — broadcast to all
-        activity_id: undefined,        // not activity specific
+        user_id: undefined,                   // no specific user — broadcast to all
+        activity_id: undefined,               // not activity specific
         type: "Broadcast",
         message: "Service Day 2026 is coming! Browse available NGO activities and register before the cut-off dates. Let's make a difference together!",
-        is_read: false,
         is_broadcast: true,
+        is_read_by: [userId1.toString()],     // user1 read it, user2 hasn't
+        deleted_by: [userId2.toString()],     // user2 soft deleted it
         sent_at: new Date("2026-03-01T09:00:00"),
         scheduled_at: new Date("2026-03-01T09:00:00"),
-        repeat_intervel_minutes: null,
-        repeat_until: null
+        repeat_interval_minutes: null,
+        repeat_until: null,
     },
 ]
