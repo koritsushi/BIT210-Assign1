@@ -21,11 +21,13 @@ export class ActivityCheckIn implements OnInit {
   private userService = inject(UserService);
   private ngoService = inject(NgoService);
 
+  // Observables for activities, registrations, users, and NGOs
   activities = this.activityService.activities$;
   registrations = this.registrationService.registrations$;
   users = this.userService.users$;
   ngos = this.ngoService.ngos$;
 
+  // State for selected activity and report visibility
   selectedActivity = '';
   showReport = false;
 
