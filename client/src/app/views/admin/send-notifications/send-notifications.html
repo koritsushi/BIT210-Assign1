@@ -34,10 +34,12 @@
             <h2>
               {{ isBroadcastMode ? 'Broadcast Message' : 'Standard Notification' }}
             </h2>
+
             <p *ngIf="!isBroadcastMode">
               Send registration, cancellation, reminder, or update notifications
               linked to a selected activity.
             </p>
+
             <p *ngIf="isBroadcastMode">
               Send a broadcast message to the selected audience in the same
               panel.
@@ -53,6 +55,7 @@
             >
               Standard Notification
             </button>
+
             <button
               class="mode-btn"
               type="button"
@@ -61,6 +64,7 @@
             >
               Broadcast Message
             </button>
+
             <button
               class="close-panel-btn"
               type="button"
@@ -250,28 +254,28 @@
       Loading notifications...
     </div>
 
-    <div *ngIf="!loading && notifications.length === 0" class="loading-box">
+    <div *ngIf="!loading && getSortedNotifications().length === 0" class="loading-box">
       No notifications available.
     </div>
 
     <div
-      *ngIf="!loading && notifications.length > 0"
+      *ngIf="!loading && getSortedNotifications().length > 0"
       class="notification-list"
     >
-      <article class="notification-item" *ngFor="let item of notifications">
+      <article class="notification-item" *ngFor="let item of getSortedNotifications()">
         <div class="notification-top">
           <div>
-            <h3>{{ item.title }}</h3>
+            <h3>{{ $any(item).title || buildTitleFromType(item.type) }}</h3>
             <p class="notification-message">{{ item.message }}</p>
           </div>
 
           <div class="notification-actions">
             <span
               class="status-badge"
-              [class.sent]="item.status === 'Sent'"
-              [class.scheduled]="item.status === 'Scheduled'"
+              [class.sent]="getStatusFromDates(item.scheduled_at, item.sent_at) === 'Sent'"
+              [class.scheduled]="getStatusFromDates(item.scheduled_at, item.sent_at) === 'Scheduled'"
             >
-              {{ item.status }}
+              {{ getStatusFromDates(item.scheduled_at, item.sent_at) }}
             </span>
 
             <button
@@ -286,12 +290,12 @@
 
         <div class="meta-grid">
           <p><strong>Type:</strong> {{ item.type }}</p>
-          <p><strong>Audience:</strong> {{ item.audience }}</p>
-          <p><strong>Activity:</strong> {{ item.activityName || 'Not selected' }}</p>
-          <p><strong>Scheduled At:</strong> {{ item.scheduledAt }}</p>
-          <p><strong>Sent At:</strong> {{ item.sentAt || '-' }}</p>
+          <p><strong>Audience:</strong> {{ $any(item).audience || (item.is_broadcast ? 'All' : 'Employees') }}</p>
+          <p><strong>Activity:</strong> {{ getActivityNameById(item.activity_id) }}</p>
+          <p><strong>Scheduled At:</strong> {{ formatDateValue(item.scheduled_at) }}</p>
+          <p><strong>Sent At:</strong> {{ formatDateValue(item.sent_at) }}</p>
           <p><strong>Interval:</strong> {{ getIntervalSummary(item) }}</p>
-          <p><strong>Repeat Until:</strong> {{ item.repeatUntil || '-' }}</p>
+          <p><strong>Repeat Until:</strong> {{ formatDateValue(item.repeat_until) }}</p>
         </div>
       </article>
     </div>

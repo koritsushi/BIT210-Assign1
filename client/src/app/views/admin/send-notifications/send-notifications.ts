@@ -5,7 +5,6 @@ import {
   Component,
   OnDestroy,
   OnInit,
-  effect,
   inject,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -24,22 +23,6 @@ type NotificationType =
 
 type AudienceType = 'Employees' | 'NGOs' | 'All';
 type NotificationStatus = 'Scheduled' | 'Sent';
-
-interface NotificationViewItem {
-  id: number;
-  backendId?: string;
-  title: string;
-  type: NotificationType;
-  audience: AudienceType;
-  message: string;
-  scheduledAt: string;
-  sentAt?: string;
-  status: NotificationStatus;
-  activityId?: string;
-  activityName?: string;
-  repeatIntervelMinutes: number | null;
-  repeatUntil: string;
-}
 
 interface RecipientUser {
   userId: string;
@@ -60,6 +43,7 @@ export class SendNotifications implements OnInit, OnDestroy {
   private httpClient = inject(HttpClient);
 
   activities = this.activityService.activities$;
+  notifications = this.notificationService.notifications$;
 
   title = '';
   type: NotificationType = 'Reminder';
@@ -77,19 +61,7 @@ export class SendNotifications implements OnInit, OnDestroy {
   feedbackMessage = '';
   feedbackType: 'success' | 'error' = 'success';
 
-  notifications: NotificationViewItem[] = [];
   private fallbackTimer?: ReturnType<typeof setTimeout>;
-
-  constructor() {
-    effect(() => {
-      const serviceData = this.notificationService.notifications$?.() ?? [];
-      const mapped = this.mapAndGroupNotifications(serviceData);
-
-      this.notifications = this.dedupeViewItems(mapped);
-      this.loading = false;
-      this.cdr.detectChanges();
-    });
-  }
 
   ngOnInit(): void {
     this.loading = true;
@@ -99,7 +71,7 @@ export class SendNotifications implements OnInit, OnDestroy {
     }
 
     if (typeof this.activityService.getActivities === 'function') {
-       this.activityService.getActivities();
+      this.activityService.getActivities();
     }
 
     this.fallbackTimer = setTimeout(() => {
@@ -139,14 +111,13 @@ export class SendNotifications implements OnInit, OnDestroy {
       this.type = 'Reminder';
     }
 
-    this.feedbackMessage = '';
-
     if (this.type !== 'Reminder') {
       this.repeatIntervelMinutes = null;
       this.repeatUntil = '';
       this.scheduledAt = '';
     }
 
+    this.feedbackMessage = '';
     this.cdr.detectChanges();
   }
 
@@ -218,7 +189,8 @@ export class SendNotifications implements OnInit, OnDestroy {
       return;
     }
 
-    const needsReminderInterval = !this.isBroadcastMode && this.type === 'Reminder';
+    const needsReminderInterval =
+      !this.isBroadcastMode && this.type === 'Reminder';
 
     if (
       needsReminderInterval &&
@@ -256,7 +228,9 @@ export class SendNotifications implements OnInit, OnDestroy {
     }
 
     const repeatUntilDate =
-      needsReminderInterval && this.repeatUntil && !isNaN(new Date(this.repeatUntil).getTime())
+      needsReminderInterval &&
+      this.repeatUntil &&
+      !isNaN(new Date(this.repeatUntil).getTime())
         ? new Date(this.repeatUntil)
         : null;
 
@@ -264,31 +238,53 @@ export class SendNotifications implements OnInit, OnDestroy {
       ? 'Broadcast'
       : this.type;
 
-    const summaryItem: NotificationViewItem = {
-      id: Date.now(),
-      title: this.title.trim(),
+    const basePayload = {
+      activity_id: !this.isBroadcastMode ? this.selectedActivityId : undefined,
       type: currentType,
-      audience: this.isBroadcastMode ? this.audience : 'Employees',
       message: this.message.trim(),
-      scheduledAt: sendNow ? '-' : this.formatDateValue(targetDate.toISOString()),
-      sentAt: sendNow ? this.formatDateValue(now.toISOString()) : '-',
-      status: sendNow ? 'Sent' : 'Scheduled',
-      activityId: this.isBroadcastMode ? '' : this.selectedActivityId,
-      activityName: this.isBroadcastMode
-        ? ''
-        : this.getActivityNameById(this.selectedActivityId),
-      repeatIntervelMinutes:
+      is_read: false,
+      is_broadcast: this.isBroadcastMode,
+      sent_at: sendNow ? now.toISOString() : null,
+      scheduled_at: sendNow ? null : targetDate.toISOString(),
+      repeat_intervel_minutes:
         needsReminderInterval && this.repeatIntervelMinutes !== null
           ? Number(this.repeatIntervelMinutes)
           : null,
-      repeatUntil: repeatUntilDate
-        ? this.formatDateValue(repeatUntilDate.toISOString())
-        : '-',
+      repeat_until: repeatUntilDate ? repeatUntilDate.toISOString() : null,
+      title: this.title.trim(),
+      audience: this.isBroadcastMode ? this.audience : 'Employees',
     };
 
-    this.resolveRecipients(
-      this.isBroadcastMode ? this.audience : 'Employees'
-    ).subscribe((recipients) => {
+    if (this.isBroadcastMode) {
+      const payload = {
+        ...basePayload,
+        user_id: undefined,
+        activity_id: undefined,
+        repeat_intervel_minutes: null,
+        repeat_until: null,
+      };
+
+      this.notificationService.createNotification(payload as any).subscribe({
+        next: () => {
+          this.feedbackType = 'success';
+          this.feedbackMessage = sendNow
+            ? 'Notification sent successfully.'
+            : 'Notification scheduled successfully.';
+          this.resetForm();
+          this.refreshNotifications();
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.feedbackType = 'error';
+          this.feedbackMessage = 'Failed to send notification.';
+          this.cdr.detectChanges();
+        },
+      });
+
+      return;
+    }
+
+    this.resolveRecipients('Employees').subscribe((recipients) => {
       if (recipients.length === 0) {
         this.feedbackType = 'error';
         this.feedbackMessage =
@@ -298,13 +294,10 @@ export class SendNotifications implements OnInit, OnDestroy {
       }
 
       const requests = recipients.map((recipient) => {
-        const payload = this.buildNotificationPayload(
-          recipient.userId,
-          summaryItem,
-          targetDate,
-          now,
-          sendNow
-        );
+        const payload = {
+          ...basePayload,
+          user_id: recipient.userId,
+        };
 
         return this.notificationService.createNotification(payload as any);
       });
@@ -340,40 +333,15 @@ export class SendNotifications implements OnInit, OnDestroy {
     this.feedbackMessage = '';
   }
 
-  getIntervalSummary(item: NotificationViewItem): string {
-    if (item.type === 'Broadcast') {
-      return 'Not used for broadcast';
-    }
-
-    if (item.repeatIntervelMinutes === null) {
-      return 'No interval';
-    }
-
-    return `Every ${item.repeatIntervelMinutes} minute(s)`;
-  }
-
-  deleteNotification(item: NotificationViewItem): void {
-    const serviceData = this.notificationService.notifications$?.() ?? [];
-
-    const matchedBackendIds = serviceData
-      .filter((raw: any) => this.isSameNotificationGroup(raw, item))
-      .map((raw: any) => raw?._id?.toString?.())
-      .filter((id: string | undefined): id is string => Boolean(id));
-
-    const uniqueIds = Array.from(new Set(matchedBackendIds));
-
-    if (uniqueIds.length === 0) {
+  deleteNotification(item: Notification): void {
+    if (!item._id) {
       this.feedbackType = 'error';
       this.feedbackMessage = 'This notification cannot be deleted.';
       this.cdr.detectChanges();
       return;
     }
 
-    const deleteRequests = uniqueIds.map((id) =>
-      this.notificationService.deleteNotification(id)
-    );
-
-    forkJoin(deleteRequests).subscribe({
+    this.notificationService.deleteNotification(item._id).subscribe({
       next: () => {
         this.feedbackType = 'success';
         this.feedbackMessage = 'Notification deleted successfully.';
@@ -388,68 +356,10 @@ export class SendNotifications implements OnInit, OnDestroy {
     });
   }
 
-  private isSameNotificationGroup(raw: any, item: NotificationViewItem): boolean {
-    const rawType = this.normalizeType(raw?.type);
-    const rawTitle = raw?.title ?? this.buildTitleFromType(rawType);
-    const rawAudience = raw?.audience ?? (raw?.is_broadcast ? 'All' : 'Employees');
-    const rawMessage = raw?.message ?? '';
-    const rawActivityId = raw?.activity_id?.toString?.() ?? '';
-    const rawScheduledAt = this.formatDateValue(raw?.scheduled_at);
-    const rawSentAt = this.formatDateValue(raw?.sent_at);
-    const rawRepeatMinutes =
-      typeof raw?.repeat_intervel_minutes === 'number'
-        ? raw.repeat_intervel_minutes
-        : null;
-    const rawRepeatUntil = this.formatDateValue(raw?.repeat_until);
-
-    return (
-      rawTitle === item.title &&
-      rawType === item.type &&
-      rawAudience === item.audience &&
-      rawMessage === item.message &&
-      rawActivityId === (item.activityId ?? '') &&
-      rawScheduledAt === item.scheduledAt &&
-      rawSentAt === (item.sentAt ?? '-') &&
-      rawRepeatMinutes === item.repeatIntervelMinutes &&
-      rawRepeatUntil === item.repeatUntil
-    );
-  }
-
   private refreshNotifications(): void {
     if (typeof this.notificationService.getNotifications === 'function') {
       this.notificationService.getNotifications();
     }
-  }
-
-  private buildNotificationPayload(
-    userId: string,
-    summaryItem: NotificationViewItem,
-    targetDate: Date,
-    now: Date,
-    sendNow: boolean
-  ) {
-    const isBroadcast = summaryItem.type === 'Broadcast';
-
-    return {
-      user_id: userId,
-      activity_id:
-        !isBroadcast && summaryItem.activityId
-          ? summaryItem.activityId
-          : undefined,
-      type: summaryItem.type,
-      message: summaryItem.message,
-      is_read: false,
-      is_broadcast: isBroadcast,
-      sent_at: sendNow ? now.toISOString() : null,
-      scheduled_at: sendNow ? null : targetDate.toISOString(),
-      repeat_intervel_minutes: isBroadcast ? null : summaryItem.repeatIntervelMinutes,
-      repeat_until:
-        isBroadcast || !summaryItem.repeatUntil || summaryItem.repeatUntil === '-'
-          ? null
-          : new Date(summaryItem.repeatUntil).toISOString(),
-      title: summaryItem.title,
-      audience: summaryItem.audience,
-    };
   }
 
   private resolveRecipients(audience: AudienceType): Observable<RecipientUser[]> {
@@ -585,111 +495,17 @@ export class SendNotifications implements OnInit, OnDestroy {
     }));
   }
 
-  private mapAndGroupNotifications(serviceData: Notification[]): NotificationViewItem[] {
-    const mapped = serviceData.map((item, index) =>
-      this.mapNotificationToView(item, index + 1)
-    );
-
-    return this.dedupeViewItems(mapped);
-  }
-
-  private dedupeViewItems(items: NotificationViewItem[]): NotificationViewItem[] {
-    const map = new Map<string, NotificationViewItem>();
-
-    items.forEach((item) => {
-      const key = [
-        item.title,
-        item.type,
-        item.audience,
-        item.message,
-        item.activityId ?? '',
-        item.scheduledAt,
-        item.sentAt ?? '',
-        item.repeatIntervelMinutes ?? '',
-        item.repeatUntil ?? '',
-        item.status,
-      ].join('|');
-
-      if (!map.has(key)) {
-        map.set(key, item);
-      }
-    });
-
-    return Array.from(map.values()).sort((a, b) => {
-      const aTime = this.parseSortDate(a);
-      const bTime = this.parseSortDate(b);
-      return bTime - aTime;
-    });
-  }
-
-  private parseSortDate(item: NotificationViewItem): number {
-    const rawValue = item.status === 'Sent' ? item.sentAt : item.scheduledAt;
-
-    if (!rawValue || rawValue === '-') {
-      return 0;
-    }
-
-    const date = new Date(rawValue);
-    return isNaN(date.getTime()) ? 0 : date.getTime();
-  }
-
-  private mapNotificationToView(
-    item: Notification,
-    index: number
-  ): NotificationViewItem {
-    const raw = item as Notification &
-      Partial<{
-        id: number;
-        notification_id: number;
-        title: string;
-        audience: AudienceType;
-        activity_id: string;
-        is_broadcast: boolean;
-        repeat_intervel_minutes: number | null;
-        repeat_until: string | Date | null;
-      }>;
-
-    const type = this.normalizeType((raw as any).type);
-    const scheduledValue = (raw as any).scheduled_at;
-    const sentValue = (raw as any).sent_at;
-    const idValue = (raw as any).id ?? (raw as any).notification_id ?? index;
-    const activityId = (raw as any).activity_id ?? '';
-    const isBroadcast = Boolean((raw as any).is_broadcast);
-    const backendId = (raw as any)._id?.toString?.() ?? '';
-
-    return {
-      id: Number(idValue),
-      backendId,
-      title: (raw as any).title?.trim()
-        ? (raw as any).title
-        : this.buildTitleFromType(type),
-      type,
-      audience: (raw as any).audience ?? (isBroadcast ? 'All' : 'Employees'),
-      message: (raw as any).message ?? '',
-      scheduledAt: this.formatDateValue(scheduledValue),
-      sentAt: this.formatDateValue(sentValue),
-      status: this.getStatusFromDates(scheduledValue, sentValue),
-      activityId,
-      activityName: this.getActivityNameById(activityId),
-      repeatIntervelMinutes:
-        typeof (raw as any).repeat_intervel_minutes === 'number'
-          ? (raw as any).repeat_intervel_minutes
-          : null,
-      repeatUntil: this.formatDateValue((raw as any).repeat_until),
-    };
-  }
-
-  private getActivityNameById(activityId: string | undefined): string {
-    if (!activityId) return '';
+  getActivityNameById(activityId: string | undefined): string {
+    if (!activityId) return 'Not selected';
 
     const activity = this.activities().find(
       (item: any) => item?._id?.toString() === activityId?.toString()
     );
 
-    return activity?.name ?? '';
+    return activity?.name ?? 'Unknown Activity';
   }
 
-  private getStatusFromDates(
+  getStatusFromDates(
     scheduledAt: Date | string | undefined | null,
     sentAt?: Date | string | undefined | null
   ): NotificationStatus {
@@ -710,21 +526,7 @@ export class SendNotifications implements OnInit, OnDestroy {
     return 'Sent';
   }
 
-  private normalizeType(type: string): NotificationType {
-    if (
-      type === 'Registration' ||
-      type === 'Cancellation' ||
-      type === 'Reminder' ||
-      type === 'Update' ||
-      type === 'Broadcast'
-    ) {
-      return type;
-    }
-
-    return 'Reminder';
-  }
-
-  private buildTitleFromType(type: string): string {
+  buildTitleFromType(type: string | undefined): string {
     switch (type) {
       case 'Registration':
         return 'Registration Notification';
@@ -741,7 +543,7 @@ export class SendNotifications implements OnInit, OnDestroy {
     }
   }
 
-  private formatDateValue(value: Date | string | undefined | null): string {
+  formatDateValue(value: Date | string | undefined | null): string {
     if (!value) return '-';
 
     const date = new Date(value);
@@ -751,5 +553,28 @@ export class SendNotifications implements OnInit, OnDestroy {
     }
 
     return date.toLocaleString();
+  }
+
+  getIntervalSummary(item: any): string {
+    if (item?.type === 'Broadcast' || item?.is_broadcast) {
+      return 'Not used for broadcast';
+    }
+
+    if (
+      item?.repeat_intervel_minutes === null ||
+      item?.repeat_intervel_minutes === undefined
+    ) {
+      return 'No interval';
+    }
+
+    return `Every ${item.repeat_intervel_minutes} minute(s)`;
+  }
+
+  getSortedNotifications(): Notification[] {
+    return [...this.notifications()].sort((a: any, b: any) => {
+      const aTime = new Date(a?.sent_at || a?.scheduled_at || 0).getTime();
+      const bTime = new Date(b?.sent_at || b?.scheduled_at || 0).getTime();
+      return bTime - aTime;
+    });
   }
 }
