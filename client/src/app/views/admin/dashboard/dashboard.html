@@ -12,7 +12,7 @@
           <th>Activity</th>
           <th>When</th>
           <th>Where</th>
-          <th>Offered/Taken</th>
+          <th>Offered/Taken/Remaining</th>
           <th>Cut-off</th>
           <th>Status</th>
           <th>Participants</th>
@@ -20,38 +20,39 @@
         </tr>
       </thead>
       <tbody>
-        @for (a of activities; track a.id) {
+        @for (a of activities(); track trackActivity($index, a)) {
           <tr>
-            <td>{{ a.displayId }}</td>
+            <td>{{ getDisplayId($index) }}</td>
             <td>
-              <div class="activity-title">{{ a.activityName }}</div>
-              <div class="activity-desc">{{ a.description }}</div>
+              <div class="activity-title">{{ a.name }}</div>
+              <div class="activity-desc">{{ getDescription(a) }}</div>
             </td>
             <td>{{ displayWhen(a) }}</td>
-            <td>{{ a.location }}</td>
-            <td>{{ a.offered }}/{{ a.taken }}</td>
+            <td>{{ getLocation(a) }}</td>
+            <td>{{ a.max_slots }}/{{ getTaken(a) }}/{{ getRemaining(a) }}</td>
             <td>
-              <div class="cutoff">
-                <span>{{ cutoffParts(a.cutoff).date }}</span>
-                <span>{{ cutoffParts(a.cutoff).time }}</span>
+              <div class="cutoff" [attr.data-cutoff]="getActivityId(a)">
+                <span>{{ cutoffParts(a.cutoff_datetime).date }}</span>
+                <span>{{ cutoffParts(a.cutoff_datetime).time }}</span>
               </div>
             </td>
             <td>
               <span
                 class="badge"
-                [class.badge-full]="a.status === 'Full'"
-                [class.badge-closed]="a.status === 'Closed'">
-                {{ a.status }}
+                [class.badge-full]="getStatus(a) === 'Full'"
+                [class.badge-closed]="getStatus(a) === 'Closed'">
+                {{ getStatus(a) }}
               </span>
             </td>
             <td>
-              <a class="btn small participant-link" [routerLink]="['/admin/dashboard', a.id, 'participants']">
+              <a class="btn small participant-link" [routerLink]="['/admin/dashboard', getActivityId(a), 'participants']">
                 View<br>Participants
               </a>
+              <div class="participant-count">{{ getParticipantCount(a) }} registered</div>
             </td>
             <td class="actions">
               <button class="btn small" (click)="edit(a)">Edit</button>
-              <button class="btn small danger" (click)="remove(a.id)">Del</button>
+              <button class="btn small danger" (click)="remove(getActivityId(a))">Del</button>
             </td>
           </tr>
         }

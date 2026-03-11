@@ -102,7 +102,7 @@ td:nth-child(4) {
 
 th:nth-child(5),
 td:nth-child(5) {
-  min-width: 96px;
+  min-width: 132px;
   white-space: nowrap;
 }
 
@@ -170,6 +170,12 @@ td:nth-child(9) {
   max-width: 102px;
   padding: 6px 8px;
   display: inline-block;
+}
+
+.participant-count {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 12px;
 }
 
 .grid {
