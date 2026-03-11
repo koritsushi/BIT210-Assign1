@@ -31,8 +31,8 @@ export class ActivityCheckIn implements OnInit {
   users = this.userService.users$;
   ngos = this.ngoService.ngos$;
 
-  // State for selected activity and report visibility
-  selectedActivity = '';
+  // State for selected activity index and report visibility
+  selectedActivityIndex = 0; // index into activityOptions
   showReport = false;
 
   // store check-in status and time updates locally (casue mock data)
@@ -65,19 +65,19 @@ export class ActivityCheckIn implements OnInit {
   }
 
   get currentActivitySelection(): string {
-    return this.selectedActivity || this.activityOptions[0] || '';
+    return this.activityOptions[this.selectedActivityIndex] || '';
   }
 
   generateReport(): void {
     this.showReport = true;
   }
 
-  selectActivity(activity: string): void {
-    this.selectedActivity = activity;
+  selectActivity(index: number): void {
+    this.selectedActivityIndex = index;
   }
 
   get reportActivityName(): string {
-    return this.selectedActivity || this.activityOptions[0] || 'All Activities';
+    return this.currentActivitySelection || 'All Activities';
   }
 
   // report header getters
@@ -111,11 +111,14 @@ export class ActivityCheckIn implements OnInit {
 
   // QR code related getters
   get qrCodeNumber(): string {
-    return this.checkinService.getQrCodeNumber(this.currentQrActivityName, this.activityOptions);
+    // use the position in the options array (1-based) so duplicates get unique codes
+    return String(this.selectedActivityIndex + 1);
   }
 
   get qrImageUrl(): string {
-    return this.checkinService.getQrImageUrl(this.currentQrActivityName, this.activityOptions);
+    const codeNumber = Number(this.qrCodeNumber);
+    if (!Number.isInteger(codeNumber) || codeNumber < 1) return '';
+    return `/qrcodes/${codeNumber}.png`;
   }
 
   get hasQrImage(): boolean {
@@ -125,7 +128,6 @@ export class ActivityCheckIn implements OnInit {
   get qrActivityName(): string {
     return this.currentQrActivityName || 'N/A';
   }
-
 
 
   onStatusChange(recordId: string, status: CheckInStatus): void {
@@ -175,8 +177,8 @@ export class ActivityCheckIn implements OnInit {
 // ---------------------------------------------------------------------------
 // copied helpers from checkin.service.ts (everything except lines 68-79)
 
-export function getActivityOptions(activities: Activity[], ngos: Ngo[]): string[] { // Generate unique activity options based on activity names and NGO names
-    return [...new Set(activities.map((activity) => getActivityName(activity, ngos)))]; 
+export function getActivityOptions(activities: Activity[], ngos: Ngo[]): string[] { // list activity options by name (duplicates allowed)
+    return activities.map((activity) => getActivityName(activity, ngos));
 }
 
 export function buildRecords(
