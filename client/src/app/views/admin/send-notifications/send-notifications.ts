@@ -13,6 +13,7 @@ import { catchError, map } from 'rxjs/operators';
 import { ActivityService } from '../../../services/activity.service';
 import { NotificationService } from '../../../services/notification.service';
 import { Notification } from '../../../models/notification.model';
+import { NotificationFormComponent } from './notification-form/notification-form';
 
 type NotificationType =
   | 'Registration'
@@ -29,10 +30,21 @@ interface RecipientUser {
   role: string;
 }
 
+interface NotificationFormValue {
+  title: string;
+  type: NotificationType;
+  audience: AudienceType;
+  selectedActivityId: string;
+  message: string;
+  scheduledAt: string;
+  repeatIntervelMinutes: number | null;
+  repeatUntil: string;
+}
+
 @Component({
   selector: 'app-send-notifications',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NotificationFormComponent],
   templateUrl: './send-notifications.html',
   styleUrl: './send-notifications.css',
 })
@@ -66,12 +78,12 @@ export class SendNotifications implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loading = true;
 
-    if (typeof this.notificationService.getNotifications === 'function') {
-      this.notificationService.getNotifications();
-    }
-
     if (typeof this.activityService.getActivities === 'function') {
       this.activityService.getActivities();
+    }
+
+    if (typeof this.notificationService.getNotifications === 'function') {
+      this.notificationService.getNotifications();
     }
 
     this.fallbackTimer = setTimeout(() => {
@@ -84,6 +96,10 @@ export class SendNotifications implements OnInit, OnDestroy {
     if (this.fallbackTimer) {
       clearTimeout(this.fallbackTimer);
     }
+  }
+
+  goBackToOverview(): void {
+    this.closeBroadcastPanel();
   }
 
   openBroadcastPanel(): void {
@@ -145,6 +161,50 @@ export class SendNotifications implements OnInit, OnDestroy {
 
     this.feedbackMessage = '';
     this.cdr.detectChanges();
+  }
+
+  onFormChange(formValue: NotificationFormValue): void {
+    this.title = formValue.title;
+    this.type = formValue.type;
+    this.audience = formValue.audience;
+    this.selectedActivityId = formValue.selectedActivityId;
+    this.message = formValue.message;
+    this.scheduledAt = formValue.scheduledAt;
+    this.repeatIntervelMinutes = formValue.repeatIntervelMinutes;
+    this.repeatUntil = formValue.repeatUntil;
+  }
+
+  onFormAction(action: 'sendNow' | 'schedule' | 'clear' | 'close'): void {
+    if (action === 'sendNow') {
+      this.sendNow();
+      return;
+    }
+
+    if (action === 'schedule') {
+      this.scheduleNotification();
+      return;
+    }
+
+    if (action === 'close') {
+      this.closeBroadcastPanel();
+      return;
+    }
+
+    this.resetForm();
+    this.cdr.detectChanges();
+  }
+
+  onModeChange(mode: 'standard' | 'broadcast'): void {
+    if (mode === 'standard') {
+      this.setStandardMode();
+    } else {
+      this.setBroadcastMode();
+    }
+  }
+
+  onChildTypeChange(type: string): void {
+    this.type = type as NotificationType;
+    this.onTypeChange();
   }
 
   scheduleNotification(): void {
