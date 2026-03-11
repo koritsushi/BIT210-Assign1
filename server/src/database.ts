@@ -109,12 +109,34 @@ async function applySchemaValidation(db: mongodb.Db) {
         },
     };
 
+    const notificationSchema = {
+        $jsonSchema: {
+        bsonType: "object",
+        required: ["type", "message", "is_broadcast", "is_read_by", "deleted_by", "sent_at"],
+        properties: {
+            _id: { bsonType: "objectId" },
+            user_id: { bsonType: "string" },        // not required — optional for broadcasts
+            activity_id: { bsonType: "string" },    // not required — optional
+            type: { enum: ["Registration", "Cancellation", "Reminder", "Update", "Broadcast"] },
+            message: { bsonType: "string" },
+            is_broadcast: { bsonType: "bool" },
+            is_read_by: { bsonType: "array" },
+            deleted_by: { bsonType: "array" },
+            sent_at: { bsonType: "date" },
+            scheduled_at: { bsonType: ["date", "null"] },
+            repeat_interval_minutes: { bsonType: ["int", "null"] },
+            repeat_until: { bsonType: ["date", "null"] },
+        }
+    }
+    };
+
   // Apply all schemas
     const collections = [
         { name: "users", schema: userSchema },
         { name: "ngos", schema: ngoSchema },
         { name: "activities", schema: activitySchema },
         { name: "registrations", schema: registrationSchema },
+        { name: "notification", schema: notificationSchema}
     ];
 
     for (const { name, schema } of collections) {
@@ -168,7 +190,10 @@ class MockCollection<T> {
         if (index !== -1) {
             this.data[index] = { ...this.data[index], ...update.$set };
         }
-        return { modifiedCount: index !== -1 ? 1 : 0 };
+        return { 
+            modifiedCount: index !== -1 ? 1 : 0,
+            matchedCount: index !== -1 ? 1 : 0 
+        };
     }
 
     async deleteOne(filter: Partial<T>) { 
