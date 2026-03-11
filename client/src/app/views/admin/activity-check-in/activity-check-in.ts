@@ -1,48 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
-import { Activity } from '../../../models/activity.model';
-import { User } from '../../../models/user.model';
-
-type CheckInStatus = 'Absent' | 'Attended';
-
-interface CheckInRecord {
-  id: string;
-  name: string;
-  department: string;
-  checkInTime: string;
-  status: CheckInStatus;
-  activity: string;
-}
-
-type ApiActivity = Activity & {
-  ngo_name?: string;
-  location?: string;
-  description?: string;
-};
-
-type ApiRegistration = {
-  _id?: string;
-  user_id: string;
-  activity_id: string;
-  registered_at: Date | string;
-  updated_at: Date | string;
-  status: 'Registered' | 'Cancelled' | 'Attended';
-};
-
-type ApiNgo = {
-  _id?: string;
-  name: string;
-  description: string;
-  location: string;
-  service_type: string;
-  is_active: boolean;
-};
-
-const API_URL = 'http://localhost:3000';
-const DELETED_ACTIVITY_IDS_KEY = 'adminDeletedActivityIds';
+import {
+  CheckInRecord,
+  CheckInStatus,
+} from '../../../models/activity-check-in.model';
+import { ActivityCheckInService } from '../../../services/activity-check-in.service';
 
 @Component({
   selector: 'app-activity-check-in',
@@ -65,11 +28,29 @@ export class ActivityCheckIn implements OnInit {
   private readonly checkInStatusMap: Record<string, CheckInStatus> = {};
 
   constructor(
-    private httpClient: HttpClient,
+    private activityCheckInService: ActivityCheckInService,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
+    this.activityCheckInService.viewData$.subscribe((data) => {
+      if (!data) {
+        this.activityOptions = [];
+        this.records = [];
+        this.cdr.detectChanges();
+        return;
+      }
+
+      this.syncLookupMap(this.activityIdMap, data.activityIdMap);
+      this.syncLookupMap(this.activityQrIndexMap, data.activityQrIndexMap);
+      this.syncLookupMap(this.activityMeta, data.activityMeta);
+      this.activityOptions = data.activityOptions;
+      this.records = data.records;
+      if (!this.selectedActivity || !this.activityOptions.includes(this.selectedActivity)) {
+        this.selectedActivity = this.activityOptions[0] ?? '';
+      }
+      this.cdr.detectChanges();
+    });
     this.loadCheckInData();
   }
 
@@ -114,8 +95,8 @@ export class ActivityCheckIn implements OnInit {
   }
 
   get attendanceRate(): number {
-    if (!this.totalEmployees) return 0;
-    return Math.round((this.attendedCount / this.totalEmployees) * 100);
+    if (!this.filteredRecords.length) return 0;
+    return Math.round((this.attendedCount / this.filteredRecords.length) * 100);
   }
 
   get qrCodeNumber(): string {
@@ -124,10 +105,9 @@ export class ActivityCheckIn implements OnInit {
   }
 
   get qrImageUrl(): string {
-    const indexText = this.qrCodeNumber;
-    const numericId = Number(indexText);
-    if (!Number.isInteger(numericId) || numericId < 1 || numericId > 10) return '';
-    return `/qrcodes/${numericId}.png`;
+    const id = Number(this.qrCodeNumber);
+    if (!Number.isInteger(id) || id < 1 || id > 10) return '';
+    return `/qrcodes/${id}.png`;
   }
 
   get hasQrImage(): boolean {
@@ -144,141 +124,17 @@ export class ActivityCheckIn implements OnInit {
     if (record) {
       record.status = status;
       if (status === 'Attended') {
-        record.checkInTime = this.formatDateTime(new Date());
+        record.checkInTime = this.activityCheckInService.formatDateTime(new Date());
       }
     }
   }
 
   private loadCheckInData(): void {
-    forkJoin({
-      activities: this.httpClient.get<ApiActivity[]>(`${API_URL}/activity`),
-      registrations: this.httpClient.get<ApiRegistration[]>(`${API_URL}/registration`),
-      users: this.httpClient.get<User[]>(`${API_URL}/users`),
-      ngos: this.httpClient.get<ApiNgo[]>(`${API_URL}/ngo`),
-    }).subscribe({
-      next: ({ activities, registrations, users, ngos }) => {
-        const deletedIds = this.getDeletedActivityIds();
-        const visibleActivities = activities.filter(
-          (activity) => !deletedIds.includes(String(activity._id ?? '')),
-        );
-        const visibleRegistrations = registrations.filter(
-          (registration) => !deletedIds.includes(String(registration.activity_id ?? '')),
-        );
-        this.applyActivityOptions(visibleActivities, ngos);
-        this.buildCheckInRecords(visibleActivities, visibleRegistrations, users);
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.activityOptions = [];
-        this.records = [];
-        this.cdr.detectChanges();
-      },
-    });
+    this.activityCheckInService.loadCheckInData(this.selectedActivity, this.checkInStatusMap);
   }
 
-  private applyActivityOptions(activities: ApiActivity[], ngos: ApiNgo[]): void {
-    for (const key of Object.keys(this.activityIdMap)) delete this.activityIdMap[key];
-    for (const key of Object.keys(this.activityQrIndexMap)) delete this.activityQrIndexMap[key];
-    for (const key of Object.keys(this.activityMeta)) delete this.activityMeta[key];
-
-    this.activityOptions = activities.map((activity) => this.toActivityName(activity, ngos));
-
-    activities.forEach((activity, index) => {
-      const name = this.toActivityName(activity, ngos);
-      const id = String(activity._id ?? '').trim();
-      if (name && id) this.activityIdMap[name] = id;
-      if (name) this.activityQrIndexMap[name] = String(index + 1);
-      if (name) {
-        this.activityMeta[name] = {
-          date: this.formatActivityDate(activity),
-          location: this.resolveActivityLocation(activity, ngos),
-        };
-      }
-    });
-
-    if (!this.selectedActivity || !this.activityOptions.includes(this.selectedActivity)) {
-      this.selectedActivity = this.activityOptions[0] ?? '';
-    }
-  }
-
-  private buildCheckInRecords(
-    activities: ApiActivity[],
-    registrations: ApiRegistration[],
-    users: User[],
-  ): void {
-    const activityMap = new Map<string, ApiActivity>();
-    activities.forEach((activity) => activityMap.set(String(activity._id ?? ''), activity));
-
-    const userMap = new Map<string, User>();
-    users.forEach((user) => userMap.set(String(user._id ?? ''), user));
-
-    this.records = registrations
-      .filter((registration) => registration.status !== 'Cancelled')
-      .map((registration) => {
-        const activity = activityMap.get(String(registration.activity_id ?? ''));
-        const user = userMap.get(String(registration.user_id ?? ''));
-        if (!activity || !user) return null;
-
-        const recordId = String(registration._id ?? `${registration.activity_id}-${registration.user_id}`);
-        const currentStatus = this.checkInStatusMap[recordId]
-          ?? (registration.status === 'Attended' ? 'Attended' : 'Absent');
-        this.checkInStatusMap[recordId] = currentStatus;
-
-        return {
-          id: recordId,
-          name: user.name,
-          department: user.department,
-          checkInTime: this.formatDateTime(registration.updated_at || registration.registered_at),
-          status: currentStatus,
-          activity: this.activityOptions.find((name) => this.activityIdMap[name] === String(activity._id ?? '')) ?? 'Activity',
-        } satisfies CheckInRecord;
-      })
-      .filter((record): record is CheckInRecord => !!record);
-  }
-
-  private toActivityName(activity: ApiActivity, ngos: ApiNgo[]): string {
-    const activityName = String(activity.name ?? '').trim();
-    if (activityName) return activityName;
-
-    const ngoName = String(activity.ngo_name ?? '').trim();
-    if (ngoName) return ngoName;
-
-    const ngo = ngos.find((item) => String(item._id ?? '') === String(activity.ngo_id ?? ''));
-    if (ngo?.name) return ngo.name;
-
-    return `Activity ${String(activity._id ?? '').slice(-4)}`;
-  }
-
-  private resolveActivityLocation(activity: ApiActivity, ngos: ApiNgo[]): string {
-    const location = String(activity.location ?? '').trim();
-    if (location) return location;
-
-    const ngo = ngos.find((item) => String(item._id ?? '') === String(activity.ngo_id ?? ''));
-    return ngo?.location ?? 'N/A';
-  }
-
-  private formatActivityDate(activity: ApiActivity): string {
-    const rawDate = String(activity.date ?? '').split('T')[0] ?? '';
-    if (!rawDate) return 'N/A';
-    return rawDate;
-  }
-
-  private formatDateTime(value: string | Date): string {
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return String(value ?? '');
-
-    const date = parsed.toISOString().slice(0, 10);
-    const time = parsed.toTimeString().slice(0, 5);
-    return `${date} ${time}`;
-  }
-
-  private getDeletedActivityIds(): string[] {
-    const text = sessionStorage.getItem(DELETED_ACTIVITY_IDS_KEY) ?? '[]';
-    try {
-      const parsed = JSON.parse(text);
-      return Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
-    } catch {
-      return [];
-    }
+  private syncLookupMap<T>(target: Record<string, T>, source: Record<string, T>): void {
+    for (const key of Object.keys(target)) delete target[key];
+    Object.assign(target, source);
   }
 }
