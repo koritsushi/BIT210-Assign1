@@ -1,0 +1,74 @@
+<br>
+<!-- Notifications Panel -->
+<div class="card notification-card">
+    <div class="notification-header">
+        <h3>
+            Notifications (Employee)
+            <span *ngIf="getUserNotifications().length > 0" class="count-badge">
+                {{ getUserNotifications().length }}
+            </span>
+        </h3>
+        <div class="notification-actions">
+            <button 
+                class="btn-outline" 
+                (click)="toggleNotifications()">
+                {{ notificationsCollapsed ? 'Expand' : 'Collapse' }}
+            </button>
+            <button 
+                class="btn-outline" 
+                (click)="clearNotifications()"
+                [disabled]="getUserNotifications().length === 0">
+                Clear All
+            </button>
+        </div>
+    </div>
+    
+    <!-- Notification Type Summary -->
+    <div *ngIf="!notificationsCollapsed && getUserNotifications().length > 0" class="notification-summary">
+        <div class="summary-item" *ngIf="getCountByType('Registration') > 0">
+            <span class="summary-text">{{ getCountByType('Registration') }} Registration(s)</span>
+        </div>
+        <div class="summary-item" *ngIf="getCountByType('Cancellation') > 0">
+            <span class="summary-text">{{ getCountByType('Cancellation') }} Cancellation(s)</span>
+        </div>
+        <div class="summary-item" *ngIf="getCountByType('Update') > 0">
+            <span class="summary-text">{{ getCountByType('Update') }} Update(s)</span>
+        </div>
+        <div class="summary-item" *ngIf="getCountByType('Reminder') > 0">
+            <span class="summary-text">{{ getCountByType('Reminder') }} Reminder(s)</span>
+        </div>
+        <div class="summary-item" *ngIf="getCountByType('Broadcast') > 0">
+            <span class="summary-text">{{ getCountByType('Broadcast') }} Broadcast(s)</span>
+        </div>
+    </div>
+
+    <div *ngIf="!notificationsCollapsed" class="notification-body">
+        <p *ngIf="getUserNotifications().length === 0" class="muted">No notifications.</p>
+        
+        <ul *ngIf="getUserNotifications().length > 0" class="notification-list">
+            <li 
+                *ngFor="let notification of getUserNotifications()" 
+                class="notification-item"
+                [ngClass]="getNotificationTypeClass(notification.type)">
+                
+                <span class="notification-icon">{{ getNotificationIcon(notification.type) }}</span>
+                
+                <div class="notification-content">
+                    <div class="notification-top">
+                        <span class="notification-type-badge">{{ notification.type }}</span>
+                    </div>
+                    <span class="notification-message">{{ notification.message }}</span>
+                    <span class="notification-activity">Activity: {{ getActivityName(notification.activity_id) }}</span>
+                    <span class="notification-time">{{ formatTimestamp(notification.sent_at) }}</span>
+                </div>
+
+                <button 
+                    class="btn-delete" 
+                    (click)="deleteNotification(notification)"
+                    title="Delete notification">
+                    ×
+                </button>
+            </li>
+        </ul>
+    </div>
+</div>

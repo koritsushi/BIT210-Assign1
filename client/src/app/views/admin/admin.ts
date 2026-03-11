@@ -3,9 +3,9 @@ import { NavBar } from '../../shared/components/nav-bar/nav-bar';
 import { RouterOutlet } from '@angular/router';
 
 @Component({
-  selector: 'app-employee',
+  selector: 'app-admin',
   imports: [NavBar, RouterOutlet],
-  templateUrl: './employee.html',
-  styleUrl: './employee.css',
+  templateUrl: './admin.html',
+  styleUrl: './admin.css',
 })
-export class Employee {}
+export class Admin {}

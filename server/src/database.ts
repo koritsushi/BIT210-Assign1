@@ -3,13 +3,15 @@ import { User } from "./user";
 import { Activity } from "./activity";
 import { Registration } from "./registration";
 import { Ngo } from "./ngo";
-import { mockUsers, mockActivities, mockNgos, mockRegistrations } from "../mockdata";
+import { Notification } from "./notification";
+import { mockUsers, mockActivities, mockNgos, mockRegistrations, mockNotifications } from "../mockdata";
 
 export const collections: {
     users?: mongodb.Collection<User> | any;
     activites?: mongodb.Collection<Activity> | any;
     registrations?: mongodb.Collection<Registration> | any;
     ngos?: mongodb.Collection<Ngo> | any;
+    notifications?: mongodb.Collection<Notification> | any;
 } = {};
 
 export async function connectDB(uri: string) {
@@ -23,7 +25,8 @@ export async function connectDB(uri: string) {
     const activitesCollection = db.collection<Activity>("activity");
     const registrationsCollection = db.collection<Registration>("registration");
     const ngosCollection = db.collection<Ngo>("ngo");
-    
+    const notificationCollection = db.collection<Ngo>("notification");
+
     collections.users = userCollection;
     collections.activites = activitesCollection;
     collections.registrations = registrationsCollection;
@@ -35,6 +38,7 @@ export async function connectMockDB(uri: string) {
     collections.activites = new MockCollection<Activity>(mockActivities);
     collections.registrations = new MockCollection<Registration>(mockRegistrations);
     collections.ngos = new MockCollection<Ngo>(mockNgos);
+    collections.notifications = new MockCollection<Notification>(mockNotifications);
 }
 
 async function applySchemaValidation(db: mongodb.Db) {
@@ -146,13 +150,20 @@ class MockCollection<T> {
     }
 
     async insertOne(doc: T) {
-        this.data.push(doc);
-        return { insertedId: (doc as any)._id };
+       const newDoc = { 
+            _id: new mongodb.ObjectId(), //auto generate _id
+            ...(doc as any) 
+        };
+        this.data.push(newDoc as T);
+        return { 
+            acknowledged: true,          //route checks this
+            insertedId: (newDoc as any)._id 
+        };
     }
 
     async updateOne(filter: Partial<T>, update: { $set: Partial<T> }) {
         const index = this.data.findIndex(item =>
-            Object.entries(filter).every(([k, v]) => (item as any)[k] === v)
+            Object.entries(filter).every(([k, v]) => (item as any)[k]?.toString() === v?.toString())
         );
         if (index !== -1) {
             this.data[index] = { ...this.data[index], ...update.$set };
@@ -162,7 +173,7 @@ class MockCollection<T> {
 
     async deleteOne(filter: Partial<T>) { 
         const index = this.data.findIndex(item =>
-        Object.entries(filter).every(([k, v]) => (item as any)[k] === v)
+        Object.entries(filter).every(([k, v]) => (item as any)[k]?.toString() === v?.toString())
         );
         if (index !== -1) this.data.splice(index, 1);
         return { deletedCount: index !== -1 ? 1 : 0 };

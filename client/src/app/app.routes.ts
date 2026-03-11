@@ -13,11 +13,11 @@ export const routes: Routes = [
         canActivate: [AuthGuard],
         data: { role: 'Admin'},
         children: [
-            { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
             { path: 'dashboard', loadComponent: () => import('./views/admin/dashboard/dashboard').then((admin) => admin.Dashboard) },
             { path: 'dashboard/:activityId/participants', loadComponent: () => import('./views/admin/view-participants/view-participants').then((admin) => admin.ViewParticipants) },
             { path: 'activity-check-in', loadComponent: () => import('./views/admin/activity-check-in/activity-check-in').then((admin) => admin.ActivityCheckIn) },
             { path: 'send-notifications', loadComponent: () => import('./views/admin/send-notifications/send-notifications').then((admin) => admin.SendNotifications) },
+            { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
         ],
     },
     {
@@ -26,10 +26,9 @@ export const routes: Routes = [
         data: { role: 'Employee'},
         component: Employee,
          children: [
-            { path: '', redirectTo: 'dashboard', pathMatch: 'full'},
             { path: 'dashboard', loadComponent: () => import('./views/employee/dashboard/dashboard').then((employee) => employee.Dashboard)},
-            { path: 'register', loadComponent: () => import('./views/employee/register/register').then((employee) => employee.Register)},
-            { path: 'check-in', loadComponent: () => import('./views/employee/check-in/check-in').then((employee) => employee.CheckIn)},
+            { path: 'notification', loadComponent: () => import('./views/employee/notification/notification').then((employee) => employee.NotificationComponent)},
+            { path: '', redirectTo: 'dashboard', pathMatch: 'full'}
         ]
     },
     { path: '**', redirectTo: 'login' }
