@@ -103,6 +103,23 @@ export class SendNotifications implements OnInit, OnDestroy {
     }
   }
 
+  private scrollToTop(): void {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  }
+
+  private showFeedback(
+    type: 'success' | 'error',
+    message: string
+  ): void {
+    this.feedbackType = type;
+    this.feedbackMessage = message;
+    this.cdr.detectChanges();
+    this.scrollToTop();
+  }
+
   goBackToOverview(): void {
     this.closeBroadcastPanel();
   }
@@ -206,6 +223,7 @@ export class SendNotifications implements OnInit, OnDestroy {
     }
 
     this.resetForm();
+    this.feedbackMessage = '';
     this.cdr.detectChanges();
   }
 
@@ -224,24 +242,20 @@ export class SendNotifications implements OnInit, OnDestroy {
 
   scheduleNotification(): void {
     if (!this.canScheduleCurrentMode()) {
-      this.feedbackType = 'error';
-      this.feedbackMessage =
-        'Scheduling is only available for reminder notifications and broadcast messages.';
-      this.cdr.detectChanges();
+      this.showFeedback(
+        'error',
+        'Scheduling is only available for reminder notifications and broadcast messages.'
+      );
       return;
     }
 
     if (!this.enableScheduleTime) {
-      this.feedbackType = 'error';
-      this.feedbackMessage = 'Please tick Enable Schedule Time first.';
-      this.cdr.detectChanges();
+      this.showFeedback('error', 'Please tick Enable Schedule Time first.');
       return;
     }
 
     if (!this.scheduledAt) {
-      this.feedbackType = 'error';
-      this.feedbackMessage = 'Please select a schedule date and time.';
-      this.cdr.detectChanges();
+      this.showFeedback('error', 'Please select a schedule date and time.');
       return;
     }
 
@@ -258,16 +272,12 @@ export class SendNotifications implements OnInit, OnDestroy {
 
   private submitNotification(sendNow: boolean): void {
     if (!this.title.trim() || !this.message.trim()) {
-      this.feedbackType = 'error';
-      this.feedbackMessage = 'Please complete the title and message.';
-      this.cdr.detectChanges();
+      this.showFeedback('error', 'Please complete the title and message.');
       return;
     }
 
     if (!this.isBroadcastMode && !this.selectedActivityId) {
-      this.feedbackType = 'error';
-      this.feedbackMessage = 'Please select a related activity.';
-      this.cdr.detectChanges();
+      this.showFeedback('error', 'Please select a related activity.');
       return;
     }
 
@@ -281,10 +291,10 @@ export class SendNotifications implements OnInit, OnDestroy {
         (this.repeatIntervelMinutes === null && this.repeatUntil)
       )
     ) {
-      this.feedbackType = 'error';
-      this.feedbackMessage =
-        'Please fill in both Repeat Interval and Repeat Until, or leave both empty.';
-      this.cdr.detectChanges();
+      this.showFeedback(
+        'error',
+        'Please fill in both Repeat Interval and Repeat Until, or leave both empty.'
+      );
       return;
     }
 
@@ -293,9 +303,7 @@ export class SendNotifications implements OnInit, OnDestroy {
       this.repeatIntervelMinutes !== null &&
       Number(this.repeatIntervelMinutes) <= 0
     ) {
-      this.feedbackType = 'error';
-      this.feedbackMessage = 'Repeat Interval must be greater than 0.';
-      this.cdr.detectChanges();
+      this.showFeedback('error', 'Repeat Interval must be greater than 0.');
       return;
     }
 
@@ -304,9 +312,7 @@ export class SendNotifications implements OnInit, OnDestroy {
       !sendNow && this.enableScheduleTime ? new Date(this.scheduledAt) : now;
 
     if (!sendNow && this.enableScheduleTime && isNaN(targetDate.getTime())) {
-      this.feedbackType = 'error';
-      this.feedbackMessage = 'Invalid schedule date/time.';
-      this.cdr.detectChanges();
+      this.showFeedback('error', 'Invalid schedule date/time.');
       return;
     }
 
@@ -350,18 +356,17 @@ export class SendNotifications implements OnInit, OnDestroy {
 
       this.notificationService.createNotification(payload as any).subscribe({
         next: () => {
-          this.feedbackType = 'success';
-          this.feedbackMessage = sendNow
-            ? 'Notification sent successfully.'
-            : 'Notification scheduled successfully.';
           this.resetForm();
           this.refreshNotifications();
-          this.cdr.detectChanges();
+          this.showFeedback(
+            'success',
+            sendNow
+              ? 'Notification sent successfully.'
+              : 'Notification scheduled successfully.'
+          );
         },
         error: () => {
-          this.feedbackType = 'error';
-          this.feedbackMessage = 'Failed to send notification.';
-          this.cdr.detectChanges();
+          this.showFeedback('error', 'Failed to send notification.');
         },
       });
 
@@ -370,10 +375,10 @@ export class SendNotifications implements OnInit, OnDestroy {
 
     this.resolveRecipients('Employees').subscribe((recipients) => {
       if (recipients.length === 0) {
-        this.feedbackType = 'error';
-        this.feedbackMessage =
-          'No target users found for this audience. Notification was not sent.';
-        this.cdr.detectChanges();
+        this.showFeedback(
+          'error',
+          'No target users found for this audience. Notification was not sent.'
+        );
         return;
       }
 
@@ -388,18 +393,17 @@ export class SendNotifications implements OnInit, OnDestroy {
 
       forkJoin(requests).subscribe({
         next: () => {
-          this.feedbackType = 'success';
-          this.feedbackMessage = sendNow
-            ? 'Notification sent successfully.'
-            : 'Notification scheduled successfully.';
           this.resetForm();
           this.refreshNotifications();
-          this.cdr.detectChanges();
+          this.showFeedback(
+            'success',
+            sendNow
+              ? 'Notification sent successfully.'
+              : 'Notification scheduled successfully.'
+          );
         },
         error: () => {
-          this.feedbackType = 'error';
-          this.feedbackMessage = 'Failed to send notification.';
-          this.cdr.detectChanges();
+          this.showFeedback('error', 'Failed to send notification.');
         },
       });
     });
@@ -416,28 +420,21 @@ export class SendNotifications implements OnInit, OnDestroy {
     this.repeatUntil = '';
     this.enableScheduleTime = false;
     this.enableIntervalTime = false;
-    this.feedbackMessage = '';
   }
 
   deleteNotification(item: Notification): void {
     if (!item._id) {
-      this.feedbackType = 'error';
-      this.feedbackMessage = 'This notification cannot be deleted.';
-      this.cdr.detectChanges();
+      this.showFeedback('error', 'This notification cannot be deleted.');
       return;
     }
 
     this.notificationService.deleteNotification(item._id).subscribe({
       next: () => {
-        this.feedbackType = 'success';
-        this.feedbackMessage = 'Notification deleted successfully.';
         this.refreshNotifications();
-        this.cdr.detectChanges();
+        this.showFeedback('success', 'Notification deleted successfully.');
       },
       error: () => {
-        this.feedbackType = 'error';
-        this.feedbackMessage = 'Failed to delete notification.';
-        this.cdr.detectChanges();
+        this.showFeedback('error', 'Failed to delete notification.');
       },
     });
   }
