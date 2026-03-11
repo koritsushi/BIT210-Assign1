@@ -2,16 +2,74 @@
   <header class="page-header">
     <h1>Send Notifications and Reminders</h1>
     <p class="page-description">
-      The administrator can send messages, link them to an activity, and store
-      schedule interval details for future notification handling.
+      The administrator can open the notification panel when needed, manage
+      normal notification types, and switch to broadcast mode for scheduled
+      announcements.
     </p>
   </header>
 
-  <section class="content-grid">
+  <section class="entry-card" *ngIf="!showBroadcastPanel">
+    <div class="entry-content">
+      <h2>Notifications Control</h2>
+      <p>
+        Open the notification panel to send registration, cancellation,
+        reminder, update, or broadcast messages without adding a new navigation
+        item.
+      </p>
+      <button
+        class="open-panel-btn"
+        type="button"
+        (click)="openBroadcastPanel()"
+      >
+        Open Notifications Panel
+      </button>
+    </div>
+  </section>
+
+  <section *ngIf="showBroadcastPanel" class="content-grid single-column">
     <section class="card">
       <div class="card-header">
-        <h2>Broadcast Message</h2>
-        <p>Create and send a notification for employees, NGOs, or all users.</p>
+        <div class="header-top-row">
+          <div>
+            <h2>
+              {{ isBroadcastMode ? 'Broadcast Message' : 'Standard Notification' }}
+            </h2>
+            <p *ngIf="!isBroadcastMode">
+              Send registration, cancellation, reminder, or update notifications
+              linked to a selected activity.
+            </p>
+            <p *ngIf="isBroadcastMode">
+              Send a broadcast message to the selected audience in the same
+              panel.
+            </p>
+          </div>
+
+          <div class="panel-action-group">
+            <button
+              class="mode-btn"
+              type="button"
+              [class.active-mode]="!isBroadcastMode"
+              (click)="setStandardMode()"
+            >
+              Standard Notification
+            </button>
+            <button
+              class="mode-btn"
+              type="button"
+              [class.active-mode]="isBroadcastMode"
+              (click)="setBroadcastMode()"
+            >
+              Broadcast Message
+            </button>
+            <button
+              class="close-panel-btn"
+              type="button"
+              (click)="closeBroadcastPanel()"
+            >
+              Close Panel
+            </button>
+          </div>
+        </div>
       </div>
 
       <div
@@ -33,29 +91,39 @@
         />
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="type">Notification Type</label>
-          <select id="type" [(ngModel)]="type">
-            <option value="Registration">Registration</option>
-            <option value="Cancellation">Cancellation</option>
-            <option value="Reminder">Reminder</option>
-            <option value="Update">Update</option>
-            <option value="Broadcast">Broadcast</option>
-          </select>
-        </div>
+      <div class="form-group" *ngIf="!isBroadcastMode">
+        <label for="type">Notification Type</label>
+        <select id="type" [(ngModel)]="type" (ngModelChange)="onTypeChange()">
+          <option value="Registration">Registration</option>
+          <option value="Cancellation">Cancellation</option>
+          <option value="Reminder">Reminder</option>
+          <option value="Update">Update</option>
+        </select>
+      </div>
 
+      <div class="form-row" *ngIf="isBroadcastMode">
         <div class="form-group">
-          <label for="audience">Audience</label>
-          <select id="audience" [(ngModel)]="audience">
+          <label for="broadcastAudience">Audience</label>
+          <select id="broadcastAudience" [(ngModel)]="audience">
             <option value="All">All</option>
             <option value="Employees">Employees</option>
             <option value="NGOs">NGOs</option>
           </select>
         </div>
+
+        <div class="form-group">
+          <label for="broadcastType">Notification Type</label>
+          <input
+            id="broadcastType"
+            type="text"
+            value="Broadcast"
+            readonly
+            class="readonly-input"
+          />
+        </div>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" *ngIf="!isBroadcastMode">
         <label for="activityId">Related Activity</label>
         <select id="activityId" [(ngModel)]="selectedActivityId">
           <option value="">Select an activity</option>
@@ -63,6 +131,14 @@
             {{ activity.name }}
           </option>
         </select>
+      </div>
+
+      <div class="form-group audience-note" *ngIf="!isBroadcastMode">
+        <label>Recipients</label>
+        <div class="readonly-note">
+          Recipients are determined automatically based on the selected activity
+          and notification type.
+        </div>
       </div>
 
       <div class="form-group">
@@ -75,7 +151,7 @@
         ></textarea>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" *ngIf="isBroadcastMode || type === 'Reminder'">
         <label for="scheduledAt">Schedule Date and Time</label>
         <input
           id="scheduledAt"
@@ -84,55 +160,82 @@
         />
       </div>
 
+      <div
+        class="broadcast-interval-section"
+        *ngIf="!isBroadcastMode && type === 'Reminder'"
+      >
+        <div class="interval-box">
+          <h3>Schedule Intervals</h3>
+          <p>
+            These interval settings are stored together with the reminder
+            notification.
+          </p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="repeatIntervelMinutes">Repeat Interval (Minutes)</label>
+              <input
+                id="repeatIntervelMinutes"
+                type="number"
+                min="1"
+                [(ngModel)]="repeatIntervelMinutes"
+                placeholder="Example: 60"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="repeatUntil">Repeat Until</label>
+              <input
+                id="repeatUntil"
+                type="datetime-local"
+                [(ngModel)]="repeatUntil"
+              />
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <h3>Reminder Interval Purpose</h3>
+            <p>
+              These values are stored with the reminder notification so the
+              backend can keep the interval configuration data.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-card helper-card" *ngIf="!isBroadcastMode">
+        <h3>Standard Notification Purpose</h3>
+        <p>
+          Use this mode for registration confirmation, cancellations, updates,
+          and reminder notices linked to a selected activity.
+        </p>
+      </div>
+
+      <div class="summary-card helper-card" *ngIf="isBroadcastMode">
+        <h3>Broadcast Purpose</h3>
+        <p>
+          Use this mode for general announcements sent to employees, NGOs, or
+          all target users.
+        </p>
+      </div>
+
       <div class="button-row">
         <button class="primary-btn" type="button" (click)="sendNow()">
           Send Now
         </button>
+
         <button
+          *ngIf="isBroadcastMode || type === 'Reminder'"
           class="secondary-btn"
           type="button"
           (click)="scheduleNotification()"
         >
           Schedule Notification
         </button>
+
         <button class="secondary-btn" type="button" (click)="resetForm()">
           Clear
         </button>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="card-header">
-        <h2>Schedule Intervals</h2>
-        <p>Store repeat interval information for backend scheduling data.</p>
-      </div>
-
-      <div class="form-group">
-        <label for="repeatIntervelMinutes">Repeat Interval (Minutes)</label>
-        <input
-          id="repeatIntervelMinutes"
-          type="number"
-          min="1"
-          [(ngModel)]="repeatIntervelMinutes"
-          placeholder="Example: 60"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="repeatUntil">Repeat Until</label>
-        <input
-          id="repeatUntil"
-          type="datetime-local"
-          [(ngModel)]="repeatUntil"
-        />
-      </div>
-
-      <div class="summary-card">
-        <h3>Interval Purpose</h3>
-        <p>
-          These values are stored with the notification so the backend can keep
-          the interval configuration data.
-        </p>
       </div>
     </section>
   </section>
