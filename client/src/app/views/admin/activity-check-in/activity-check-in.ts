@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-  CheckInRecord,
-  CheckInStatus,
-} from '../../../models/activity-check-in.model';
-import { ActivityCheckInService } from '../../../services/activity-check-in.service';
+import { CheckInRecord, CheckInStatus } from '../../../models/checkin.model';
+import { ActivityService } from '../../../services/activity.service';
+import { CheckinService } from '../../../services/checkin.service';
+import { NgoService } from '../../../services/ngo.service';
+import { RegistrationService } from '../../../services/registration.servicce';
+import { UserService } from '../../../services/user.service';
 
 @Component({
   selector: 'app-activity-check-in',
@@ -14,49 +15,47 @@ import { ActivityCheckInService } from '../../../services/activity-check-in.serv
   styleUrl: './activity-check-in.css',
 })
 export class ActivityCheckIn implements OnInit {
-  selectedActivity = '';
-  generatedActivityId: string | null = null;
-  generatedActivityName: string | null = null;
+  private activityService = inject(ActivityService);
+  private checkinService = inject(CheckinService);
+  private registrationService = inject(RegistrationService);
+  private userService = inject(UserService);
+  private ngoService = inject(NgoService);
 
-  activityOptions: string[] = [];
-  records: CheckInRecord[] = [];
+  activities = this.activityService.activities$;
+  registrations = this.registrationService.registrations$;
+  users = this.userService.users$;
+  ngos = this.ngoService.ngos$;
+
+  selectedActivity = '';
+  generatedActivityName: string | null = null;
   showReport = false;
 
-  private readonly activityMeta: Record<string, { date: string; location: string }> = {};
-  private readonly activityIdMap: Record<string, string> = {};
-  private readonly activityQrIndexMap: Record<string, string> = {};
   private readonly checkInStatusMap: Record<string, CheckInStatus> = {};
-
-  constructor(
-    private activityCheckInService: ActivityCheckInService,
-    private cdr: ChangeDetectorRef,
-  ) {}
+  private readonly checkInTimeMap: Record<string, string> = {};
 
   ngOnInit(): void {
-    this.activityCheckInService.viewData$.subscribe((data) => {
-      if (!data) {
-        this.activityOptions = [];
-        this.records = [];
-        this.cdr.detectChanges();
-        return;
-      }
+    this.loadData();
+  }
 
-      this.syncLookupMap(this.activityIdMap, data.activityIdMap);
-      this.syncLookupMap(this.activityQrIndexMap, data.activityQrIndexMap);
-      this.syncLookupMap(this.activityMeta, data.activityMeta);
-      this.activityOptions = data.activityOptions;
-      this.records = data.records;
-      if (!this.selectedActivity || !this.activityOptions.includes(this.selectedActivity)) {
-        this.selectedActivity = this.activityOptions[0] ?? '';
-      }
-      this.cdr.detectChanges();
-    });
-    this.loadCheckInData();
+  get activityOptions(): string[] {
+    return this.checkinService.getActivityOptions(this.activities(), this.ngos());
+  }
+
+  get records(): CheckInRecord[] {
+    return this.checkinService.buildRecords(
+      this.activities(),
+      this.registrations(),
+      this.users(),
+      this.ngos(),
+      this.checkInStatusMap,
+      this.checkInTimeMap,
+    );
   }
 
   get filteredRecords(): CheckInRecord[] {
-    if (!this.selectedActivity) return this.records;
-    return this.records.filter((record) => record.activity === this.selectedActivity);
+    const currentActivity = this.selectedActivity || this.activityOptions[0] || '';
+    if (!currentActivity) return this.records;
+    return this.records.filter((record) => record.activity === currentActivity);
   }
 
   generateReport(): void {
@@ -64,22 +63,19 @@ export class ActivityCheckIn implements OnInit {
   }
 
   generateQrCode(): void {
-    const activityId = this.activityIdMap[this.selectedActivity];
-    if (!activityId) return;
-    this.generatedActivityId = this.activityQrIndexMap[this.selectedActivity] ?? null;
-    this.generatedActivityName = this.selectedActivity;
+    this.generatedActivityName = this.selectedActivity || this.activityOptions[0] || null;
   }
 
   get reportActivityName(): string {
-    return this.selectedActivity || 'All Activities';
+    return this.selectedActivity || this.activityOptions[0] || 'All Activities';
   }
 
   get reportDate(): string {
-    return this.activityMeta[this.reportActivityName]?.date ?? 'N/A';
+    return this.checkinService.getActivityMeta(this.reportActivityName, this.activities(), this.ngos()).date;
   }
 
   get reportLocation(): string {
-    return this.activityMeta[this.reportActivityName]?.location ?? 'N/A';
+    return this.checkinService.getActivityMeta(this.reportActivityName, this.activities(), this.ngos()).location;
   }
 
   get totalEmployees(): number {
@@ -100,8 +96,8 @@ export class ActivityCheckIn implements OnInit {
   }
 
   get qrCodeNumber(): string {
-    if (!this.generatedActivityName) return '-';
-    return this.activityQrIndexMap[this.generatedActivityName] ?? '-';
+    const activityName = (this.generatedActivityName ?? this.selectedActivity) || '';
+    return this.checkinService.getQrCodeNumber(activityName, this.activityOptions);
   }
 
   get qrImageUrl(): string {
@@ -115,26 +111,45 @@ export class ActivityCheckIn implements OnInit {
   }
 
   get qrActivityName(): string {
-    return this.generatedActivityName ?? this.selectedActivity;
+    return (this.generatedActivityName ?? this.selectedActivity) || 'N/A';
   }
 
   onStatusChange(recordId: string, status: CheckInStatus): void {
+    const registration = this.checkinService.findRegistration(this.registrations(), recordId);
+    if (!registration?._id) return;
+
+    const previousStatus = this.checkInStatusMap[recordId]
+      ?? (registration.status === 'Attended' ? 'Attended' : 'Absent');
+    const previousTime = this.checkInTimeMap[recordId];
+    const nextTime = status === 'Attended'
+      ? this.checkinService.formatDateTime(new Date())
+      : this.checkinService.formatDateTime(registration.updated_at || registration.registered_at);
+
     this.checkInStatusMap[recordId] = status;
-    const record = this.records.find((item) => item.id === recordId);
-    if (record) {
-      record.status = status;
-      if (status === 'Attended') {
-        record.checkInTime = this.activityCheckInService.formatDateTime(new Date());
-      }
-    }
+    this.checkInTimeMap[recordId] = nextTime;
+
+    const payload = this.checkinService.createStatusUpdatePayload(registration, status);
+
+    this.registrationService.updateRegistration(String(registration._id), payload).subscribe({
+      next: () => {
+        this.registrationService.getRegistrations();
+      },
+      error: () => {
+        this.checkInStatusMap[recordId] = previousStatus;
+        if (previousTime) {
+          this.checkInTimeMap[recordId] = previousTime;
+        } else {
+          delete this.checkInTimeMap[recordId];
+        }
+        alert('Failed to update check-in status.');
+      },
+    });
   }
 
-  private loadCheckInData(): void {
-    this.activityCheckInService.loadCheckInData(this.selectedActivity, this.checkInStatusMap);
-  }
-
-  private syncLookupMap<T>(target: Record<string, T>, source: Record<string, T>): void {
-    for (const key of Object.keys(target)) delete target[key];
-    Object.assign(target, source);
+  private loadData(): void {
+    this.activityService.getActivities();
+    this.registrationService.getRegistrations();
+    this.userService.getUsers();
+    this.ngoService.getNgos();
   }
 }

@@ -18,7 +18,7 @@ export interface ActivityFormValue { // represents the raw form values for creat
     whenDate: string;
 }
 
-export interface ActivityFormContext { // form using when editing an existing activity
+export interface ActivityFormContext { // form context for CU an activity
     editingId: string | null;
     editingNgoId: string;
     editingQrCode: string;
@@ -73,8 +73,9 @@ export class ActivityService {
 
 
 
-    
+
     //------------------------------------admin use only-------------------------------------------------
+    // combines raw form values and editing context to build a complete Activity object for API requests
     buildActivityPayload(raw: ActivityFormValue, context: ActivityFormContext): Activity {
         const date = this.normalizeDate(raw.whenDate);
         const id = context.isEditing && context.editingId ? context.editingId : this.generateId();
@@ -108,7 +109,7 @@ export class ActivityService {
         return activity;
     }
 
-    toFormValue(activity: Activity): ActivityFormValue {
+    toFormValue(activity: Activity): ActivityFormValue {// converts activity data into form values for edit mode
         return {
             id: String(activity._id ?? '').trim(),
             activityName: activity.name,
@@ -145,17 +146,17 @@ export class ActivityService {
         return 'Open';
     }
 
-    private toDateOnly(value: string | Date): string {
+    private toDateOnly(value: string | Date): string { // formats a date value to 'YYYY-MM-DD' 
         return this.normalizeDate(String(value ?? '')).split('T')[0] ?? '';
     }
 
-    private toDateTimeLocal(value: string | Date): string {
+    private toDateTimeLocal(value: string | Date): string { // formats a date-time value to 'YYYY-MM-DDTHH:MM' for use in datetime-local input fields
         const text = this.normalizeDateTime(String(value ?? ''));
         if (!text) return '';
         return text.includes('T') ? text.slice(0, 16) : text;
     }
 
-    private formatTime(value: number | string): string {
+    private formatTime(value: number | string): string { // formats a time value to 'HH:MM'
         if (typeof value === 'number') {
             return new Date(value).toTimeString().slice(0, 5);
         }
@@ -173,22 +174,22 @@ export class ActivityService {
         return text.slice(0, 5).padStart(5, '0');
     }
 
-    private toTimestamp(dateText: string, timeText: string): number {
+    private toTimestamp(dateText: string, timeText: string): number { // converts date and time strings into a timestamp
         const time = (timeText || '00:00').padStart(5, '0');
         return new Date(`${dateText}T${time}:00`).getTime();
     }
 
-    private normalizeDate(value: string): string {
+    private normalizeDate(value: string): string { // normalizes a date string to 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM' format
         return String(value ?? '').trim().replaceAll('/', '-');
     }
 
-    private normalizeDateTime(value: string): string {
+    private normalizeDateTime(value: string): string { // normalizes a date-time string to 'YYYY-MM-DDTHH:MM' format
         const text = String(value ?? '').trim().replaceAll('/', '-');
         if (!text) return '';
         return text.includes('T') ? text : text.replace(' ', 'T');
     }
 
-    private generateId(): string {
+    private generateId(): string { // generates a unique ID 
         const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
         let random = '';
 

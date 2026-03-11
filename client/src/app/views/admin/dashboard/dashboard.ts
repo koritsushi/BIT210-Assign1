@@ -138,7 +138,7 @@ export class Dashboard implements OnInit {
   remove(id: string): void {
     if (!id) return;
 
-    this.activityService.deleteActivity(id).subscribe({
+    this.activityService.deleteActivity(id).subscribe({ // Remove activity and refresh list
       next: () => {
         if (this.editingId === id) {
           this.closeForm();

@@ -25,6 +25,7 @@
         <thead>
           <tr>
             <th>Name</th>
+            <th>Department</th>
             <th>Check-In Time</th>
             <th>Status</th>
           </tr>
@@ -33,6 +34,7 @@
           @for (record of filteredRecords; track record.id) {
             <tr>
               <td>{{ record.name }}</td>
+              <td>{{ record.department }}</td>
               <td>{{ record.checkInTime }}</td>
               <td>
                 <select
