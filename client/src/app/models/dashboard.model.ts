@@ -49,6 +49,7 @@ export interface DashboardActivity {
   ngoName: string;
   offered: number;
   taken: number;
+  remaining: number;
   cutoff: string;
   status: ActivityStatus;
   participantCount: number;

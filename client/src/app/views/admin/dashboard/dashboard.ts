@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
@@ -8,8 +8,7 @@ import {
 } from '../../../models/dashboard.model';
 import { DashboardService } from '../../../services/dashboard.service';
 
-const DEFAULT_NGO_ID = '507f1f77bcf86cd799439011'; 
-// Default NGO ID for new activities
+const DEFAULT_NGO_ID = '507f1f77bcf86cd799439011';
 
 @Component({
   selector: 'app-dashboard',
@@ -19,6 +18,7 @@ const DEFAULT_NGO_ID = '507f1f77bcf86cd799439011';
 })
 
 export class Dashboard {
+  protected readonly dashboardService = inject(DashboardService);
   showForm = false;
   isEditing = false;
 
@@ -28,12 +28,10 @@ export class Dashboard {
   editingNgoId = DEFAULT_NGO_ID; //store ngoId when edit
   editingQrCode = '';
   form: FormGroup; // Reactive form for create/edit activity
-  activities: DashboardActivity[] = []; // List of activities 
+  protected readonly activities = this.dashboardService.activities;
 
   constructor(
-    private dashboardService: DashboardService, // Service for CRUD operations and data handling
     private fb: FormBuilder,
-    private cdr: ChangeDetectorRef,// change detection after async operations
   ) {
     this.form = this.fb.group({
       id: [{ value: '', disabled: true }],
@@ -48,35 +46,16 @@ export class Dashboard {
     });
   }
 
-  ngOnInit(): void { // Subscribe to activities observable to update the list when data changes
-    this.dashboardService.activities$.subscribe((activities) => {
-      this.activities = activities;
-      this.cdr.detectChanges();
-    });
-    this.loadActivities(); // Initial load of activities when component initializes
+  ngOnInit(): void {
+    this.dashboardService.refreshActivities();
   }
 
 
 
   openCreateForm(): void { // show create form when create new activity
+    const state = this.dashboardService.createEmptyEditState();
     this.showForm = true;
-    this.isEditing = false;
-    this.editingId = null;
-    this.editingTaken = 0;
-    this.editingStatus = 'Open';
-    this.editingNgoId = DEFAULT_NGO_ID;
-    this.editingQrCode = '';
-    this.form.reset({
-      id: '',
-      activityName: '',
-      location: '',
-      whenDate: '',
-      startTime: '',
-      endTime: '',
-      offered: 1,
-      description: '',
-      cutoff: '',
-    });
+    this.applyEditState(state);
   }
 
   closeForm(): void {
@@ -91,38 +70,30 @@ export class Dashboard {
     }
 
     const raw = this.form.getRawValue();
-    this.dashboardService.applyLocalSave(raw, {
+    this.dashboardService.saveActivity(raw, {
       editingId: this.editingId,
       editingNgoId: this.editingNgoId,
       editingQrCode: this.editingQrCode,
       editingStatus: this.editingStatus,
       editingTaken: this.editingTaken,
       isEditing: this.isEditing,
+    }).subscribe({
+      next: () => {
+        this.dashboardService.refreshActivities();
+        this.closeForm();
+      },
+      error: () => {
+        alert('Failed to save activity.');
+      },
     });
-    this.closeForm();
   }
 
 
 
   edit(activity: DashboardActivity): void {
+    const state = this.dashboardService.createEditState(activity);
     this.showForm = true;
-    this.isEditing = true;
-    this.editingId = activity.id;
-    this.editingTaken = activity.taken;
-    this.editingStatus = activity.status;
-    this.editingNgoId = activity.ngoId;
-    this.editingQrCode = activity.qrCode;
-    this.form.reset({
-      id: activity.id,
-      activityName: activity.activityName,
-      location: activity.location,
-      whenDate: this.normalizeDateForInput(activity.whenDate),
-      startTime: this.normalizeTimeForInput(activity.startTime),
-      endTime: this.normalizeTimeForInput(activity.endTime),
-      offered: activity.offered,
-      description: activity.description,
-      cutoff: this.normalizeDateTimeForInput(activity.cutoff),
-    });
+    this.applyEditState(state);
   }
 
   remove(id: string): void {
@@ -135,13 +106,7 @@ export class Dashboard {
         this.dashboardService.refreshActivities();
       },
       error: () => {
-        this.activities = this.dashboardService.removeActivity(this.activities, id);
-
-        if (this.editingId === id) {
-          this.closeForm();
-        }
-
-        this.cdr.detectChanges();
+        alert('Failed to delete activity.');
       },
     });
   }
@@ -153,31 +118,13 @@ export class Dashboard {
   cutoffParts(cutoff: string): { date: string; time: string } {
     return this.dashboardService.cutoffParts(cutoff);
   }
-
-  private loadActivities(): void { // Load activities from the server and handle success/error cases
-    this.dashboardService.refreshActivities();
-  }
-
-  private normalizeDateForInput(value: string): string {
-    return String(value ?? '').trim().replaceAll('/', '-');
-  }
-
-  private normalizeDateTimeForInput(value: string): string {
-    const text = String(value ?? '').trim().replaceAll('/', '-');
-    if (!text) return '';
-    return text.includes('T') ? text.slice(0, 16) : text.replace(' ', 'T').slice(0, 16);
-  }
-
-  private normalizeTimeForInput(value: string): string {
-    const text = String(value ?? '').trim();
-    if (/^\d{1,2}:\d{2}$/.test(text)) {
-      return text.padStart(5, '0');
-    }
-
-    if (/^\d{1,2}:\d{2}:\d{2}$/.test(text)) {
-      return text.slice(0, 5).padStart(5, '0');
-    }
-
-    return text;
+  private applyEditState(state: ReturnType<DashboardService['createEmptyEditState']>): void {
+    this.isEditing = state.isEditing;
+    this.editingId = state.editingId;
+    this.editingTaken = state.editingTaken;
+    this.editingStatus = state.editingStatus;
+    this.editingNgoId = state.editingNgoId;
+    this.editingQrCode = state.editingQrCode;
+    this.form.reset(state.formValue);
   }
 }

@@ -11,8 +11,12 @@
 
   <div class="filter-bar card content-width">
     <label class="filter-label">Filter by Activity:</label>
-    <select class="select-field" [(ngModel)]="selectedActivity">
-      @for (activity of activityOptions; track activity) {
+    <select
+      class="select-field"
+      [ngModel]="selectedActivity()"
+      (ngModelChange)="selectedActivity.set($event)"
+    >
+      @for (activity of activityOptions(); track activity) {
         <option [value]="activity">{{ activity }}</option>
       }
     </select>
@@ -30,14 +34,14 @@
           </tr>
         </thead>
         <tbody>
-          @for (record of filteredRecords; track record.id) {
+          @for (record of filteredRecords(); track record.id) {
             <tr>
               <td>{{ record.name }}</td>
               <td>{{ record.checkInTime }}</td>
               <td>
                 <select
                   class="status-select select-field"
-                  [(ngModel)]="record.status"
+                  [ngModel]="record.status"
                   (ngModelChange)="onStatusChange(record.id, $event)"
                   [class.absent]="record.status === 'Absent'"
                 >
@@ -54,33 +58,33 @@
     <aside class="card qr-card">
       <h3>QR Code</h3>
       <div class="qr-box">
-        <img *ngIf="hasQrImage" [src]="qrImageUrl" alt="Generated QR Code" class="qr-image" loading="lazy" />
-        <span *ngIf="!hasQrImage">QR</span>
+        <img *ngIf="hasQrImage()" [src]="qrImageUrl()" alt="Generated QR Code" class="qr-image" loading="lazy" />
+        <span *ngIf="!hasQrImage()">QR</span>
       </div>
-      <p class="qr-meta">Activity: {{ qrActivityName }}</p>
-      <p class="qr-meta">Code: {{ qrCodeNumber }}</p>
+      <p class="qr-meta">Activity: {{ qrActivityName() }}</p>
+      <p class="qr-meta">Code: {{ qrCodeNumber() }}</p>
       <button class="btn qr-generate-btn" type="button" (click)="generateQrCode()">
         Generate QR Code
       </button>
     </aside>
   </div>
 
-  @if (showReport) {
+  @if (showReport()) {
     <section class="card report-card content-width">
       <h2 class="report-title">Activity Report</h2>
 
       <div class="report-meta">
-        <p><strong>Activity:</strong> {{ reportActivityName }}</p>
-        <p><strong>Date:</strong> {{ reportDate }}</p>
-        <p><strong>Location:</strong> {{ reportLocation }}</p>
+        <p><strong>Activity:</strong> {{ reportActivityName() }}</p>
+        <p><strong>Date:</strong> {{ reportDate() }}</p>
+        <p><strong>Location:</strong> {{ reportLocation() }}</p>
       </div>
 
       <h3>Participation Summary</h3>
       <div class="summary-grid">
-        <div>Total Employees: <strong>{{ totalEmployees }}</strong></div>
-        <div>Attended: <strong class="ok">{{ attendedCount }}</strong></div>
-        <div>Absent: <strong class="bad">{{ absentCount }}</strong></div>
-        <div>Attendance Rate: <strong>{{ attendanceRate }}%</strong></div>
+        <div>Total Employees: <strong>{{ attendanceSummary().totalEmployees }}</strong></div>
+        <div>Attended: <strong class="ok">{{ attendanceSummary().attendedCount }}</strong></div>
+        <div>Absent: <strong class="bad">{{ attendanceSummary().absentCount }}</strong></div>
+        <div>Attendance Rate: <strong>{{ attendanceSummary().attendanceRate }}%</strong></div>
       </div>
 
     </section>

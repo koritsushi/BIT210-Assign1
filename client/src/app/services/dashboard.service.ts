@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { Activity } from '../models/activity.model';
 import {
   ActivityStatus,
@@ -36,12 +36,21 @@ export interface ActivityFormContext { // editing state and existing values of t
   isEditing: boolean;
 }
 
+export interface DashboardEditState {
+  editingId: string | null;
+  editingNgoId: string;
+  editingQrCode: string;
+  editingStatus: ActivityStatus;
+  editingTaken: number;
+  formValue: ActivityFormValue;
+  isEditing: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class DashboardService {
-  private activitiesSubject = new BehaviorSubject<DashboardActivity[]>([]);
-  activities$ = this.activitiesSubject.asObservable();
+  readonly activities = signal<DashboardActivity[]>([]);
 
   constructor(private httpClient: HttpClient) {}
 
@@ -66,18 +75,18 @@ export class DashboardService {
                       displayId: this.toDisplayId(index + 1),
                     }));
 
-                    this.activitiesSubject.next(dashboardRows);
+                    this.activities.set(dashboardRows);
                   },
-                  error: () => this.activitiesSubject.next([]),
+                  error: () => this.activities.set([]),
                 });
               },
-              error: () => this.activitiesSubject.next([]),
+              error: () => this.activities.set([]),
             });
           },
-          error: () => this.activitiesSubject.next([]),
+          error: () => this.activities.set([]),
         });
       },
-      error: () => this.activitiesSubject.next([]),
+      error: () => this.activities.set([]),
     });
   }
 
@@ -105,17 +114,17 @@ export class DashboardService {
 
   applyLocalSave(raw: ActivityFormValue, context: ActivityFormContext): void {
     const payload = this.buildActivityPayload(raw, context);
-    const currentRows = this.activitiesSubject.getValue();
+    const currentRows = this.activities();
 
     if (context.isEditing && context.editingId) {
       const updatedRow = this.buildUpdatedRow(payload, currentRows);
       const nextRows = currentRows.map((row) => (row.id === context.editingId ? updatedRow : row));
-      this.activitiesSubject.next(nextRows);
+      this.activities.set(nextRows);
       return;
     }
 
     const newRow = this.buildUpdatedRow(payload, currentRows);
-    this.activitiesSubject.next([...currentRows, newRow]);
+    this.activities.set([...currentRows, newRow]);
   }
 
   buildActivityPayload(raw: ActivityFormValue, context: ActivityFormContext): Activity {
@@ -165,6 +174,10 @@ export class DashboardService {
       ngoName: this.resolveNgoName(String(payload.ngo_id ?? DEFAULT_NGO_ID)),
       offered: Number(payload.max_slots ?? 0),
       taken: Number(payload.slots_taken ?? 0),
+      remaining: this.calculateRemaining(
+        Number(payload.max_slots ?? 0),
+        Number(payload.slots_taken ?? 0),
+      ),
       cutoff: this.toDateTimeLocal(payload.cutoff_datetime),
       status: payload.status ?? 'Open',
       participantCount: 0,
@@ -195,6 +208,50 @@ export class DashboardService {
   cutoffParts(cutoff: string): { date: string; time: string } {
     const [date, time = ''] = cutoff.split('T');
     return { date, time };
+  }
+
+  createEmptyEditState(): DashboardEditState {
+    return {
+      editingId: null,
+      editingNgoId: DEFAULT_NGO_ID,
+      editingQrCode: '',
+      editingStatus: 'Open',
+      editingTaken: 0,
+      isEditing: false,
+      formValue: {
+        id: '',
+        activityName: '',
+        location: '',
+        whenDate: '',
+        startTime: '',
+        endTime: '',
+        offered: 1,
+        description: '',
+        cutoff: '',
+      },
+    };
+  }
+
+  createEditState(activity: DashboardActivity): DashboardEditState {
+    return {
+      editingId: activity.id,
+      editingNgoId: activity.ngoId,
+      editingQrCode: activity.qrCode,
+      editingStatus: activity.status,
+      editingTaken: activity.taken,
+      isEditing: true,
+      formValue: {
+        id: activity.id,
+        activityName: activity.activityName,
+        location: activity.location,
+        whenDate: this.normalizeDateForInput(activity.whenDate),
+        startTime: this.normalizeTimeForInput(activity.startTime),
+        endTime: this.normalizeTimeForInput(activity.endTime),
+        offered: activity.offered,
+        description: activity.description,
+        cutoff: this.normalizeDateTimeForInput(activity.cutoff),
+      },
+    };
   }
 
   private fromApiActivity( // Convert API activity data to Dashboard Activity from format
@@ -231,6 +288,10 @@ export class DashboardService {
       ngoName: ngo?.name ?? '-',
       offered: Number(activity.max_slots ?? 0),
       taken: Number(activity.slots_taken ?? 0),
+      remaining: this.calculateRemaining(
+        Number(activity.max_slots ?? 0),
+        Number(activity.slots_taken ?? 0),
+      ),
       cutoff: this.toDateTimeLocal(activity.cutoff_datetime),
       status: this.resolveStatus(
         Number(activity.slots_taken ?? 0),
@@ -286,6 +347,29 @@ export class DashboardService {
   private normalizeDateTime(value: string): string {
     const text = String(value ?? '').trim().replaceAll('/', '-');
     return text.includes('T') ? text : text.replace(' ', 'T');
+  }
+
+  private normalizeDateForInput(value: string): string {
+    return String(value ?? '').trim().replaceAll('/', '-');
+  }
+
+  private normalizeDateTimeForInput(value: string): string {
+    const text = String(value ?? '').trim().replaceAll('/', '-');
+    if (!text) return '';
+    return text.includes('T') ? text.slice(0, 16) : text.replace(' ', 'T').slice(0, 16);
+  }
+
+  private normalizeTimeForInput(value: string): string {
+    const text = String(value ?? '').trim();
+    if (/^\d{1,2}:\d{2}$/.test(text)) {
+      return text.padStart(5, '0');
+    }
+
+    if (/^\d{1,2}:\d{2}:\d{2}$/.test(text)) {
+      return text.slice(0, 5).padStart(5, '0');
+    }
+
+    return text;
   }
 
   private resolveActivityName(activity: ApiActivity, idText: string, ngo?: ApiNgo): string {
@@ -366,5 +450,9 @@ export class DashboardService {
     }
 
     return fallback === 'Closed' ? 'Closed' : 'Open';
+  }
+
+  private calculateRemaining(offered: number, taken: number): number {
+    return Math.max(0, offered - taken);
   }
 }
