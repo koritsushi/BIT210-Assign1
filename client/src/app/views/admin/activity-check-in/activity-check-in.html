@@ -9,18 +9,27 @@
     </button>
   </div>
 
-  <div class="filter-bar card content-width">
-    <label class="filter-label">Filter by Activity:</label>
-    <select class="select-field" [(ngModel)]="selectedActivity">
-      @for (activity of activityOptions; track activity) {
-        <option [value]="activity">{{ activity }}</option>
-      }
-    </select>
+  <div class="activity-list-bar content-width">
+    <div class="activity-list-bar-inner card">
+      <label class="activity-list-label">Activities</label>
+      <div class="activity-list horizontal" role="list">
+        @for (activity of activityOptions; track activity) {
+          <button
+            class="activity-chip"
+            type="button"
+            [class.active]="activity === currentActivitySelection"
+            (click)="selectActivity(activity)"
+          >
+            {{ activity }}
+          </button>
+        }
+      </div>
+    </div>
   </div>
 
   <div class="checkin-row content-width">
     <section class="card table-card">
-      <h2>Activity Check-ins</h2>
+      <h2>Employee Check-In List</h2>
       <table>
         <thead>
           <tr>
@@ -37,15 +46,9 @@
               <td>{{ record.department }}</td>
               <td>{{ record.checkInTime }}</td>
               <td>
-                <select
-                  class="status-select select-field"
-                  [(ngModel)]="record.status"
-                  (ngModelChange)="onStatusChange(record.id, $event)"
-                  [class.absent]="record.status === 'Absent'"
-                >
-                  <option value="Absent">Absent</option>
-                  <option value="Attended">Attended</option>
-                </select>
+                <span class="status-pill" [class.absent]="record.status === 'Absent'">
+                  {{ record.status }}
+                </span>
               </td>
             </tr>
           }
@@ -61,9 +64,6 @@
       </div>
       <p class="qr-meta">Activity: {{ qrActivityName }}</p>
       <p class="qr-meta">Code: {{ qrCodeNumber }}</p>
-      <button class="btn qr-generate-btn" type="button" (click)="generateQrCode()">
-        Generate QR Code
-      </button>
     </aside>
   </div>
 

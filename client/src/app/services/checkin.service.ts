@@ -9,7 +9,7 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class CheckinService {
-  getActivityOptions(activities: Activity[], ngos: Ngo[]): string[] {
+  getActivityOptions(activities: Activity[], ngos: Ngo[]): string[] { // Generate unique activity options based on activity names and NGO names
     return [...new Set(activities.map((activity) => this.getActivityName(activity, ngos)))];
   }
 
@@ -61,11 +61,17 @@ export class CheckinService {
       location: this.getActivityLocation(activity, ngos),
     };
   }
-
+  // qr code part
   getQrCodeNumber(activityName: string, activityOptions: string[]): string {
     if (!activityName) return '-';
     const index = activityOptions.findIndex((item) => item === activityName);
     return index >= 0 ? String(index + 1) : '-';
+  }
+
+  getQrImageUrl(activityName: string, activityOptions: string[]): string {
+    const codeNumber = Number(this.getQrCodeNumber(activityName, activityOptions));
+    if (!Number.isInteger(codeNumber) || codeNumber < 1) return '';
+    return `/qrcodes/${codeNumber}.png`;
   }
 
   findRegistration(registrations: Registration[], recordId: string): Registration | undefined {

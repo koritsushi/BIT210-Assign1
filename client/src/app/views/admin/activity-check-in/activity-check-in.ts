@@ -27,7 +27,6 @@ export class ActivityCheckIn implements OnInit {
   ngos = this.ngoService.ngos$;
 
   selectedActivity = '';
-  generatedActivityName: string | null = null;
   showReport = false;
 
   private readonly checkInStatusMap: Record<string, CheckInStatus> = {};
@@ -53,17 +52,21 @@ export class ActivityCheckIn implements OnInit {
   }
 
   get filteredRecords(): CheckInRecord[] {
-    const currentActivity = this.selectedActivity || this.activityOptions[0] || '';
+    const currentActivity = this.currentActivitySelection;
     if (!currentActivity) return this.records;
     return this.records.filter((record) => record.activity === currentActivity);
+  }
+
+  get currentActivitySelection(): string {
+    return this.selectedActivity || this.activityOptions[0] || '';
   }
 
   generateReport(): void {
     this.showReport = true;
   }
 
-  generateQrCode(): void {
-    this.generatedActivityName = this.selectedActivity || this.activityOptions[0] || null;
+  selectActivity(activity: string): void {
+    this.selectedActivity = activity;
   }
 
   get reportActivityName(): string {
@@ -96,14 +99,11 @@ export class ActivityCheckIn implements OnInit {
   }
 
   get qrCodeNumber(): string {
-    const activityName = (this.generatedActivityName ?? this.selectedActivity) || '';
-    return this.checkinService.getQrCodeNumber(activityName, this.activityOptions);
+    return this.checkinService.getQrCodeNumber(this.currentQrActivityName, this.activityOptions);
   }
 
   get qrImageUrl(): string {
-    const id = Number(this.qrCodeNumber);
-    if (!Number.isInteger(id) || id < 1 || id > 10) return '';
-    return `/qrcodes/${id}.png`;
+    return this.checkinService.getQrImageUrl(this.currentQrActivityName, this.activityOptions);
   }
 
   get hasQrImage(): boolean {
@@ -111,7 +111,7 @@ export class ActivityCheckIn implements OnInit {
   }
 
   get qrActivityName(): string {
-    return (this.generatedActivityName ?? this.selectedActivity) || 'N/A';
+    return this.currentQrActivityName || 'N/A';
   }
 
   onStatusChange(recordId: string, status: CheckInStatus): void {
@@ -151,5 +151,9 @@ export class ActivityCheckIn implements OnInit {
     this.registrationService.getRegistrations();
     this.userService.getUsers();
     this.ngoService.getNgos();
+  }
+
+  private get currentQrActivityName(): string {
+    return this.currentActivitySelection;
   }
 }
