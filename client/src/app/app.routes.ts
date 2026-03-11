@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
 import { Employee } from './views/employee/employee';
+import { Admin } from './views/admin/admin';
 
 export const routes: Routes = [
     {path: '', redirectTo: 'login', pathMatch: 'full'},
@@ -12,6 +13,7 @@ export const routes: Routes = [
         path: 'admin',
         canActivate: [AuthGuard],
         data: { role: 'Admin'},
+        component: Admin,
         children: [
             { path: 'dashboard', loadComponent: () => import('./views/admin/dashboard/dashboard').then((admin) => admin.Dashboard) },
             { path: 'dashboard/:activityId/participants', loadComponent: () => import('./views/admin/view-participants/view-participants').then((admin) => admin.ViewParticipants) },
