@@ -30,6 +30,9 @@ export class NotificationFormComponent {
   @Input() isBroadcastMode = false;
   @Input() activities: any[] = [];
 
+  @Input() enableScheduleTime = false;
+  @Input() enableIntervalTime = false;
+
   @Output() formChange = new EventEmitter<{
     title: string;
     type: NotificationType;
@@ -39,6 +42,8 @@ export class NotificationFormComponent {
     scheduledAt: string;
     repeatIntervelMinutes: number | null;
     repeatUntil: string;
+    enableScheduleTime: boolean;
+    enableIntervalTime: boolean;
   }>();
 
   @Output() formAction = new EventEmitter<'sendNow' | 'schedule' | 'clear'>();
@@ -55,6 +60,8 @@ export class NotificationFormComponent {
       scheduledAt: this.scheduledAt,
       repeatIntervelMinutes: this.repeatIntervelMinutes,
       repeatUntil: this.repeatUntil,
+      enableScheduleTime: this.enableScheduleTime,
+      enableIntervalTime: this.enableIntervalTime,
     });
   }
 
@@ -68,6 +75,21 @@ export class NotificationFormComponent {
 
   onTypeChange(): void {
     this.typeChangeEvent.emit(this.type);
+    this.emitFormChange();
+  }
+
+  onScheduleToggle(): void {
+    if (!this.enableScheduleTime) {
+      this.scheduledAt = '';
+    }
+    this.emitFormChange();
+  }
+
+  onIntervalToggle(): void {
+    if (!this.enableIntervalTime) {
+      this.repeatIntervelMinutes = null;
+      this.repeatUntil = '';
+    }
     this.emitFormChange();
   }
 

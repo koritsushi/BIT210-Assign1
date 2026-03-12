@@ -1,17 +1,16 @@
 <div class="card-header">
   <div class="header-top-row">
-    <div>
+    <div class="header-content">
       <h2>
         {{ isBroadcastMode ? 'Broadcast Message' : 'Standard Notification' }}
       </h2>
 
-      <p *ngIf="!isBroadcastMode">
-        Send registration, cancellation, reminder, or update notifications
-        linked to a selected activity.
-      </p>
-
-      <p *ngIf="isBroadcastMode">
-        Send a broadcast message to the selected audience in the same panel.
+      <p>
+        {{
+          isBroadcastMode
+            ? 'Send a broadcast message to the selected audience in the same panel.'
+            : 'Send registration, cancellation, reminder, or update notifications linked to a selected activity.'
+        }}
       </p>
     </div>
 
@@ -121,26 +120,59 @@
   ></textarea>
 </div>
 
-<div class="form-group" *ngIf="isBroadcastMode || type === 'Reminder'">
-  <label for="scheduledAt">Schedule Date and Time</label>
-  <input
-    id="scheduledAt"
-    type="datetime-local"
-    [(ngModel)]="scheduledAt"
-    (ngModelChange)="emitFormChange()"
-  />
+<!-- Schedule Time -->
+<div
+  class="toggle-section"
+  *ngIf="isBroadcastMode || type === 'Reminder'"
+>
+  <label class="tickbox-row modern-tickbox standalone-toggle">
+    <input
+      type="checkbox"
+      [(ngModel)]="enableScheduleTime"
+      (ngModelChange)="onScheduleToggle()"
+    />
+    <span class="custom-check"></span>
+    <span class="tickbox-text">Enable Schedule Time</span>
+  </label>
+
+  <div class="feature-card popup-card" *ngIf="enableScheduleTime">
+    <div class="feature-card-header">
+      <h3>Schedule Time</h3>
+      <p>Select this option when the notification should be sent later.</p>
+    </div>
+
+    <div class="form-group no-margin">
+      <label for="scheduledAt">Schedule Date and Time</label>
+      <input
+        id="scheduledAt"
+        type="datetime-local"
+        [(ngModel)]="scheduledAt"
+        (ngModelChange)="emitFormChange()"
+      />
+    </div>
+  </div>
 </div>
 
+<!-- Schedule Intervals -->
 <div
-  class="broadcast-interval-section"
+  class="toggle-section"
   *ngIf="!isBroadcastMode && type === 'Reminder'"
 >
-  <div class="interval-box">
-    <h3>Schedule Intervals</h3>
-    <p>
-      These interval settings are stored together with the reminder
-      notification.
-    </p>
+  <label class="tickbox-row modern-tickbox standalone-toggle">
+    <input
+      type="checkbox"
+      [(ngModel)]="enableIntervalTime"
+      (ngModelChange)="onIntervalToggle()"
+    />
+    <span class="custom-check"></span>
+    <span class="tickbox-text">Enable Interval Time</span>
+  </label>
+
+  <div class="feature-card popup-card" *ngIf="enableIntervalTime">
+    <div class="feature-card-header">
+      <h3>Schedule Intervals</h3>
+      <p>Store interval settings together with the reminder notification.</p>
+    </div>
 
     <div class="form-row">
       <div class="form-group">
@@ -166,17 +198,20 @@
       </div>
     </div>
 
-    <div class="summary-card">
+    <div class="summary-card inner-summary">
       <h3>Reminder Interval Purpose</h3>
       <p>
-        These values are stored with the reminder notification so the
-        backend can keep the interval configuration data.
+        These values are stored with the reminder notification so the backend
+        can keep the interval configuration data.
       </p>
     </div>
   </div>
 </div>
 
-<div class="summary-card helper-card" *ngIf="!isBroadcastMode">
+<div
+  class="summary-card helper-card"
+  *ngIf="!isBroadcastMode"
+>
   <h3>Standard Notification Purpose</h3>
   <p>
     Use this mode for registration confirmation, cancellations, updates,
@@ -184,7 +219,10 @@
   </p>
 </div>
 
-<div class="summary-card helper-card" *ngIf="isBroadcastMode">
+<div
+  class="summary-card helper-card"
+  *ngIf="isBroadcastMode"
+>
   <h3>Broadcast Purpose</h3>
   <p>
     Use this mode for general announcements sent to employees, NGOs, or
@@ -193,13 +231,18 @@
 </div>
 
 <div class="button-row">
-  <button class="primary-btn" type="button" (click)="sendNow()">
+  <button
+    *ngIf="!enableScheduleTime && !enableIntervalTime"
+    class="primary-btn"
+    type="button"
+    (click)="sendNow()"
+  >
     Send Now
   </button>
 
   <button
-    *ngIf="isBroadcastMode || type === 'Reminder'"
-    class="secondary-btn"
+    *ngIf="enableScheduleTime || enableIntervalTime"
+    class="primary-btn"
     type="button"
     (click)="schedule()"
   >
