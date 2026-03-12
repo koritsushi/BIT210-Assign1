@@ -4,11 +4,11 @@
 }
 
 .dashboard-card {
-    width: 100%;          /* fill content area */
-    max-width: 1320px;    /* cap at 1320px */
-    margin-left: auto;
-    margin-right: auto;
-    box-sizing: border-box;
+  width: 100%;
+  max-width: 1320px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
 }
 
 .toolbar,
@@ -164,78 +164,28 @@ td:nth-child(9) {
   text-align: center;
 }
 
-
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(220px, 1fr));
-  gap: 10px 12px;
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 13px;
-  color: #374151;
-}
-
-input,
-textarea {
+.form-card {
   width: 100%;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 14px;
+  max-width: 1320px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
 }
 
-textarea {
-  resize: vertical;
+.full-page-form {
+  min-height: 70vh;
 }
 
-.full {
-  display: block;
-  margin-top: 10px;
-}
-
-/* NGO picker styles */
-.ngo-picker {
-  overflow-x: auto;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 4px;
-  cursor: grab;
-}
-.ngo-picker:active {
-  cursor: grabbing;
-}
-
-.ngo-list {
+.form-page-header {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
 }
 
-.ngo-list button {
-  padding: 6px 10px;
-  border: 1px solid #9ca3af;
-  border-radius: 6px;
-  background: #fff;
-  white-space: nowrap;
-}
-
-.ngo-list button.active {
-  background: #dbeafe;
-  border-color: #3b82f6;
-}
-
-.form-actions {
-  margin-top: 12px;
-  display: flex;
-  gap: 8px;
-}
-
-@media (max-width: 768px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
+.form-page-header h2 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #17355f;
 }

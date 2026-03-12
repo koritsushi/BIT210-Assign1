@@ -1,4 +1,4 @@
-<section class="card dashboard-card">
+<section class="card dashboard-card" *ngIf="!showForm">
   <div class="toolbar">
     <h2>Activity Dashboard</h2>
     <button class="btn primary" (click)="openCreateForm()">Add New Activity</button>
@@ -12,7 +12,7 @@
           <th>Activity</th>
           <th>When</th>
           <th>NGO</th>
-        <th>Where</th>
+          <th>Where</th>
           <th>Offered/Taken/Remaining</th>
           <th>Cut-off</th>
           <th>Status</th>
@@ -57,81 +57,18 @@
 </section>
 
 @if (showForm) {
-  <section class="card form-card">
-    <div class="form-header">
-      <h3>{{ isEditing ? 'Edit Activity' : 'Add New Activity' }}</h3>
-      <button class="btn small" (click)="closeForm()">Close</button>
+  <section class="card form-card full-page-form">
+    <div class="form-page-header">
+      <button class="btn small" type="button" (click)="closeForm()">← Back</button>
+      <h2>{{ isEditing ? 'Edit Activity' : 'Add New Activity' }}</h2>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()">
-      <div class="grid">
-        <label>
-          ID
-          <input type="text" formControlName="id" readonly />
-        </label>
-
-        <label>
-          Activity Name
-          <input type="text" formControlName="activityName" />
-        </label>
-
-        <label class="full">
-          NGO
-          <div class="ngo-picker">
-            <div class="ngo-list">
-              @for (ngo of ngos(); track ngo._id) {
-                <button type="button"
-                        [class.active]="form.value.ngoName === ngo.name"
-                        (click)="form.get('ngoName')?.setValue(ngo.name)">
-                  {{ ngo.name }}
-                </button>
-              }
-            </div>
-          </div>
-        </label>
-
-        <label>
-          Location
-          <input type="text" formControlName="location" />
-        </label>
-
-        <label>
-          Activity Date
-          <input type="date" formControlName="whenDate" />
-        </label>
-
-        <label>
-          Start Time
-          <input type="time" formControlName="startTime" />
-        </label>
-
-        <label>
-          End Time
-          <input type="time" formControlName="endTime" />
-        </label>
-
-        <label>
-          Total Slots (Offered)
-          <input type="number" min="1" formControlName="offered" />
-        </label>
-      </div>
-
-      <label class="full">
-        Description
-        <textarea rows="3" formControlName="description"></textarea>
-      </label>
-
-      <label class="full">
-        Cut-off Date & Time
-        <input type="datetime-local" formControlName="cutoff" />
-      </label>
-
-      <div class="form-actions">
-        <button class="btn primary" type="submit" [disabled]="form.invalid">
-          {{ isEditing ? 'Update Activity' : 'Add Activity' }}
-        </button>
-        <button class="btn" type="button" (click)="openCreateForm()">Clear</button>
-      </div>
-    </form>
+    <app-activity-form
+      [formGroup]="form"
+      [isEditing]="isEditing"
+      [ngos]="ngos()"
+      (formValueChange)="onFormValueChange($event)"
+      (formAction)="onFormAction($event)"
+    ></app-activity-form>
   </section>
 }
