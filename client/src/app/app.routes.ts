@@ -16,6 +16,8 @@ export const routes: Routes = [
         component: Admin,
         children: [
             { path: 'dashboard', loadComponent: () => import('./views/admin/dashboard/dashboard').then((admin) => admin.Dashboard) },
+            { path: 'activities/new', loadComponent: () => import('./views/admin/activity-form/activity-form').then((admin) => admin.ActivityFormPage) },
+            { path: 'activities/:id/edit', loadComponent: () => import('./views/admin/activity-form/activity-form').then((admin) => admin.ActivityFormPage) },
             { path: 'activity-check-in', loadComponent: () => import('./views/admin/activity-check-in/activity-check-in').then((admin) => admin.ActivityCheckIn) },
             { path: 'send-notifications', loadComponent: () => import('./views/admin/send-notifications/send-notifications').then((admin) => admin.SendNotifications) },
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' }

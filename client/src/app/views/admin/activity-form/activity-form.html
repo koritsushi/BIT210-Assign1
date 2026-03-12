@@ -1,0 +1,80 @@
+<div class="form-page">
+  <section class="card form-page-card">
+    <div class="form-header">
+      <h2>{{ title }}</h2>
+      <button class="btn" type="button" (click)="closeForm()">Close</button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="grid">
+        <label>
+          ID
+          <input type="text" formControlName="id" readonly />
+        </label>
+
+        <label>
+          Activity Name
+          <input type="text" formControlName="activityName" />
+        </label>
+
+        <label>
+          NGO
+          <div class="ngo-picker">
+            <div class="ngo-list">
+              @for (ngo of ngos(); track ngo._id) {
+                <button
+                  type="button"
+                  [class.active]="form.value.ngoName === ngo.name"
+                  (click)="form.get('ngoName')?.setValue(ngo.name)">
+                  {{ ngo.name }}
+                </button>
+              }
+            </div>
+          </div>
+        </label>
+
+        <label>
+          Location
+          <input type="text" formControlName="location" />
+        </label>
+
+        <label>
+          Activity Date
+          <input type="date" formControlName="whenDate" />
+        </label>
+
+        <label>
+          Start Time
+          <input type="time" formControlName="startTime" />
+        </label>
+
+        <label>
+          End Time
+          <input type="time" formControlName="endTime" />
+        </label>
+
+        <label>
+          Total Slots (Offered)
+          <input type="number" min="1" formControlName="offered" />
+        </label>
+      </div>
+
+      <label class="full-block">
+        Description
+        <textarea rows="4" formControlName="description"></textarea>
+      </label>
+
+      <label class="full-block">
+        Cut-off Date & Time
+        <input type="datetime-local" formControlName="cutoff" />
+      </label>
+
+      <div class="form-actions">
+        <button class="btn primary" type="submit" [disabled]="form.invalid">
+          {{ isEditing ? 'Update Activity' : 'Add Activity' }}
+        </button>
+        <button class="btn" type="button" (click)="clearForm()">Clear</button>
+      </div>
+    </form>
+  </section>
+</div>
