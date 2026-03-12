@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, NgZone, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivityService } from '../../../services/activity.service';
 import { NgoService } from '../../../services/ngo.service';
@@ -18,6 +18,7 @@ interface Toast {
   id: number;
   message: string;
   type: ToastType;
+  leaving: boolean;
 }
 
 @Component({
@@ -34,7 +35,7 @@ export class Dashboard implements OnInit {
   private registrationService = inject(RegistrationService);
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
-
+  private cdr = inject(ChangeDetectorRef);
   // --- Signals from services ---
   activities = this.activityService.activities$;
   ngos = this.ngoService.ngos$;
@@ -53,9 +54,11 @@ export class Dashboard implements OnInit {
   // --- Toast system ---
   private showToast(message: string, type: ToastType = 'success'): void {
     const id = Date.now();
-    this.toasts.push({ id, message, type });
+    this.toasts.push({ id, message, type, leaving: false });
+    this.cdr.detectChanges();          // force render when toast appears
     setTimeout(() => {
-      this.toasts = this.toasts.filter(t => t.id !== id);
+        this.toasts = this.toasts.filter(t => t.id !== id);
+        this.cdr.detectChanges();      // force render when toast disappears
     }, 3500);
   }
 

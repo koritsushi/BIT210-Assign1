@@ -3,6 +3,7 @@
   <div
     *ngFor="let toast of toasts"
     class="toast"
+    [class.toast-leaving]="toast.leaving"
     [class.toast-success]="toast.type === 'success'"
     [class.toast-error]="toast.type === 'error'"
     [class.toast-info]="toast.type === 'info'"
