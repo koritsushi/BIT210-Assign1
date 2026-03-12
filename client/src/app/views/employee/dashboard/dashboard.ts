@@ -89,15 +89,22 @@ export class Dashboard implements OnInit {
             updated_at: new Date(),
             status: 'Registered'
         };
-
+        
         this.registrationService.createRegistration(newRegistration).subscribe({
             next: () => {
-                this.registrationService.getRegistrations();
-                this.activityService.getActivities();
-                const message = `Successfully registered for "${activity.name}"`;
-                this.alert.unshift(message);
-                this.sendNotification(userId, activity._id!, 'Registration', message);
-            },
+                // increment slots_taken after successful registration
+                const updated = { ...activity, slots_taken: activity.slots_taken + 1 };
+                this.activityService.updateActivity(activity._id!, updated).subscribe({
+                    next: () => {
+                        this.registrationService.getRegistrations();
+                        this.activityService.getActivities(); // refresh to get latest slots
+                        const message = `Successfully registered for "${activity.name}"`;
+                        this.alert.unshift(message);
+                        this.sendNotification(userId, activity._id!, 'Registration', message);
+                },
+                error: () => this.alert.unshift(`Failed to update slots for "${activity.name}"`)
+            });
+        },
             error: () => {
                 this.alert.unshift(`Failed to register for "${activity.name}"`);
             }
@@ -113,13 +120,20 @@ export class Dashboard implements OnInit {
         if (!userId) return;
 
         this.registrationService.deleteRegistration(registration._id.toString()).subscribe({
-            next: () => {
-                this.registrationService.getRegistrations();
-                this.activityService.getActivities();
-                const message = `Cancelled registration for "${activity.name}"`;
-                this.alert.unshift(message);
-                this.sendNotification(userId, activity._id!, 'Cancellation', message);
-            },
+           next: () => {
+            // decrement slots_taken after successful cancellation
+            const updated = { ...activity, slots_taken: Math.max(0, activity.slots_taken - 1) };
+            this.activityService.updateActivity(activity._id!, updated).subscribe({
+                next: () => {
+                    this.registrationService.getRegistrations();
+                    this.activityService.getActivities(); // refresh to get latest slots
+                    const message = `Cancelled registration for "${activity.name}"`;
+                    this.alert.unshift(message);
+                    this.sendNotification(userId, activity._id!, 'Cancellation', message);
+                },
+                error: () => this.alert.unshift(`Failed to update slots for "${activity.name}"`)
+            });
+        },
             error: () => {
                 this.alert.unshift(`Failed to cancel "${activity.name}"`);
             }
@@ -146,6 +160,8 @@ export class Dashboard implements OnInit {
         // First cancel the old registration
         this.registrationService.deleteRegistration(registration._id.toString()).subscribe({
             next: () => {
+                const updatedFrom = { ...from, slots_taken: Math.max(0, from.slots_taken - 1) };
+                this.activityService.updateActivity(from._id!, updatedFrom).subscribe();
                 // Then register for the new activity
                 const newRegistration: Registration = {
                     user_id: userId,
@@ -157,6 +173,8 @@ export class Dashboard implements OnInit {
 
                 this.registrationService.createRegistration(newRegistration).subscribe({
                     next: () => {
+                        const updatedTo = { ...activity, slots_taken: activity.slots_taken + 1 };
+                        this.activityService.updateActivity(activity._id!, updatedTo).subscribe();
                         this.registrationService.getRegistrations();
                         this.activityService.getActivities();
                         const message = `Swapped from "${from.name}" to "${activity.name}"`;
