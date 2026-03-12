@@ -52,7 +52,7 @@ export class Dashboard implements OnInit {
   }
 
   // --- Toast system ---
-  private showToast(message: string, type: ToastType = 'success'): void {
+  private showToast(message: string, type: ToastType): void {
     const id = Date.now();
     this.toasts.push({ id, message, type, leaving: false });
     this.cdr.detectChanges();          // force render when toast appears
