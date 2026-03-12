@@ -198,6 +198,36 @@ textarea {
   margin-top: 10px;
 }
 
+/* NGO picker styles */
+.ngo-picker {
+  overflow-x: auto;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 4px;
+  cursor: grab;
+}
+.ngo-picker:active {
+  cursor: grabbing;
+}
+
+.ngo-list {
+  display: flex;
+  gap: 6px;
+}
+
+.ngo-list button {
+  padding: 6px 10px;
+  border: 1px solid #9ca3af;
+  border-radius: 6px;
+  background: #fff;
+  white-space: nowrap;
+}
+
+.ngo-list button.active {
+  background: #dbeafe;
+  border-color: #3b82f6;
+}
+
 .form-actions {
   margin-top: 12px;
   display: flex;

@@ -13,6 +13,7 @@ const DEFAULT_NGO_ID = '507f1f77bcf86cd799439011';
 // copied from activity.service.ts lines 6–29
 export interface ActivityFormValue { // represents the raw form values for creating/updating an activity
     activityName: string;
+    ngoName: string;              // added NGO name for selection
     cutoff: string;
     description: string;
     endTime: string;
@@ -68,6 +69,7 @@ export class Dashboard implements OnInit {
   form = this.fb.group({
     id: [{ value: '', disabled: true }],
     activityName: ['', Validators.required],
+    ngoName: ['', Validators.required],
     location: ['', Validators.required],
     whenDate: ['', Validators.required],
     startTime: ['', Validators.required],
@@ -93,6 +95,7 @@ export class Dashboard implements OnInit {
     this.form.reset({
       id: '',
       activityName: '',
+      ngoName: '',
       location: '',
       whenDate: '',
       startTime: '',
@@ -116,6 +119,13 @@ export class Dashboard implements OnInit {
 
     const raw = this.form.getRawValue() as ActivityFormValue; // store create/edit form value in raw, 
                                                               // then build payload to send to backend
+    // convert NGO name into ID if possible
+    if (raw.ngoName) {
+      const ngo = this.ngos().find((n) => n.name === raw.ngoName);
+      if (ngo?._id) {
+        this.editingNgoId = String(ngo._id);
+      }
+    }
     const context: ActivityFormContext = {
       editingId: this.editingId,
       editingNgoId: this.editingNgoId,
@@ -152,6 +162,7 @@ export class Dashboard implements OnInit {
     const formValue = toFormValue(activity);
     this.form.reset({
       ...formValue,
+      ngoName: this.getNgo(this.toText(activity.ngo_id))?.name || '',
       location: this.getLocation(activity),
       description: this.getDescription(activity),
     });
@@ -176,6 +187,15 @@ export class Dashboard implements OnInit {
   // ------------------------------------getters for displaying activity information in HTML
   getDisplayId(index: number): string {
     return `NGO-${index + 1}`;
+  }
+
+  getNgoName(activity: Activity): string {
+    // prefer explicit ngo_name field if present (especially for newly created
+    // activities where the ID may not exist yet or lookup failed)
+    if (activity.ngo_name) {
+      return activity.ngo_name;
+    }
+    return this.getNgo(this.toText(activity.ngo_id))?.name || '-';
   }
 
   getActivityId(activity: Activity): string {
@@ -276,7 +296,7 @@ function buildActivityPayload(raw: ActivityFormValue, context: ActivityFormConte
         qr_code: context.editingQrCode || '',
         location: raw.location,
         description: raw.description || '',
-        ngo_name: '',
+        ngo_name: raw.ngoName || '',
         participant_user_ids: [],
     };
 
@@ -288,6 +308,7 @@ function toFormValue(activity: Activity): ActivityFormValue {
     return {
         id: String(activity._id ?? '').trim(),
         activityName: activity.name,
+        ngoName: String(activity.ngo_name ?? '').trim(),
         location: String(activity.location ?? '').trim(),
         whenDate: toDateOnly(activity.date),
         startTime: formatTime(activity.start_time),

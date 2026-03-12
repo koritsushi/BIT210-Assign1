@@ -11,7 +11,8 @@
           <th>ID</th>
           <th>Activity</th>
           <th>When</th>
-          <th>Where</th>
+          <th>NGO</th>
+        <th>Where</th>
           <th>Offered/Taken/Remaining</th>
           <th>Cut-off</th>
           <th>Status</th>
@@ -27,6 +28,7 @@
               <div class="activity-desc">{{ getDescription(a) }}</div>
             </td>
             <td>{{ displayWhen(a) }}</td>
+            <td>{{ getNgoName(a) }}</td>
             <td>{{ getLocation(a) }}</td>
             <td>{{ a.max_slots }}/{{ getTaken(a) }}/{{ getRemaining(a) }}</td>
             <td>
@@ -71,6 +73,21 @@
         <label>
           Activity Name
           <input type="text" formControlName="activityName" />
+        </label>
+
+        <label class="full">
+          NGO
+          <div class="ngo-picker">
+            <div class="ngo-list">
+              @for (ngo of ngos(); track ngo._id) {
+                <button type="button"
+                        [class.active]="form.value.ngoName === ngo.name"
+                        (click)="form.get('ngoName')?.setValue(ngo.name)">
+                  {{ ngo.name }}
+                </button>
+              }
+            </div>
+          </div>
         </label>
 
         <label>
