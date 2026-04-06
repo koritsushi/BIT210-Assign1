@@ -45,6 +45,6 @@ __screenshots__/
 Thumbs.db
 
 #local file
-.env
+/server/.env
 node_modules
 .angular

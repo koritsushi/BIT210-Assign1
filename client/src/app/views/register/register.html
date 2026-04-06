@@ -1,0 +1,72 @@
+<section class="page">
+  <h2 class="title">Register</h2>
+  <p class="subtitle">Create your Service Day Dashboard account.</p>
+
+  <div class="card">
+
+    @if (success) {
+      <div class="success">{{ success }}</div>
+    }
+
+    @if (!success) {
+      <div class="field">
+        <label>Name</label>
+        <input
+          type="text"
+          [(ngModel)]="name"
+          placeholder="e.g., Alice Tan"
+        />
+      </div>
+
+      <div class="field">
+        <label>Email</label>
+        <input
+          type="email"
+          [(ngModel)]="email"
+          placeholder="e.g., alice@company.com"
+        />
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <div class="password-wrap">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            [(ngModel)]="password"
+            placeholder="Min 8 chars, 1 uppercase, 1 number"
+          />
+          <button class="btn toggle-btn" type="button" (click)="togglePassword()">
+            {{ showPassword ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Confirm Password</label>
+        <div class="password-wrap">
+          <input
+            [type]="showConfirm ? 'text' : 'password'"
+            [(ngModel)]="confirmPassword"
+            placeholder="Re-enter your password"
+          />
+          <button class="btn toggle-btn" type="button" (click)="toggleConfirm()">
+            {{ showConfirm ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" (click)="onRegister()">Register</button>
+      </div>
+
+      @if (error) {
+        <div class="error">{{ error }}</div>
+      }
+    }
+
+    <p class="hint">
+      Already have an account?
+      <a class="link" (click)="goToLogin()">Login here</a>
+    </p>
+  </div>
+</section>

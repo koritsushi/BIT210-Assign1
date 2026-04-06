@@ -27,6 +27,9 @@
   background: #fff;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
   max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .field {
@@ -63,7 +66,7 @@ input {
 }
 
 .actions {
-  margin-top: 14px;
+  margin-top: 2px;
 }
 
 .btn {
@@ -81,14 +84,22 @@ input {
 }
 
 .error {
-  margin-top: 12px;
   color: #b00020;
   font-weight: bold;
   font-size: 13px;
 }
 
+.success {
+  background: #e9f8ef;
+  color: #1f7a45;
+  border: 1px solid #bfe8cd;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .hint {
-  margin-top: 14px;
   color: #666;
   font-size: 13px;
 }

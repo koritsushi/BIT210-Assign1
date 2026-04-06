@@ -10,6 +10,18 @@ export const routes: Routes = [
         loadComponent: () => import('./views/login/login').then((m) => m.Login),
     },
     {
+        path: 'register',
+        loadComponent: () => import('./views/register/register').then((r) => r.Register)
+    },
+    {
+        path: 'verify-2fa',
+        loadComponent: () => import('./views/verify-2-fa/verify-2-fa').then((v) => v.Verify2FA)
+    },
+    {
+        path: 'verify-email',
+        loadComponent: () => import('./views/verify-email/verify-email').then((v) => v.VerifyEmail)
+    },
+    {
         path: 'admin',
         canActivate: [AuthGuard],
         data: { role: 'Admin'},

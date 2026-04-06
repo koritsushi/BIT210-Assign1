@@ -7,17 +7,39 @@ import { Router } from "@angular/router";
 })
 
 export class AuthService {
-    private apiUrl = 'http://localhost:3000/auth';
 
     constructor(
         private http: HttpClient, 
         private router: Router
     )  {}
 
-    login(name: string)
+    login(email: string, password: string)
     {
-        return this.http.post<{ token: string, user: any}>
-            (`${this.apiUrl}/login`, {name});
+        return this.http.post<{       
+            token: string;
+            user?: any;
+            requires2FA?: boolean;
+            tempToken: string;
+        }>
+        (`auth/login`, {email, password});
+    }
+
+    register(name: string, email: string, password: string) {
+        return this.http.post<{ message: string }>(
+            `auth/register`, { name, email, password }
+        );
+    }
+
+    verifyEmail(token: string) {
+        return this.http.get<{ message: string }>(
+            `auth/verify-email?token=${token}`
+        );
+    }
+ 
+    verifyTwoFa(email: string, code: string, tempToken: string) {
+        return this.http.post<{ token: string; user: any }>(
+            `auth/verify-2fa`, { email, code, tempToken }
+        );
     }
 
     saveUserId(id: string)
@@ -62,10 +84,12 @@ export class AuthService {
     }
 
     logOut() {
-        localStorage.removeItem(`token`);
-        localStorage.removeItem(`id`);
-        localStorage.removeItem(`Name`);
-        localStorage.removeItem(`role`);
+        localStorage.removeItem('token');
+        localStorage.removeItem('id');
+        localStorage.removeItem('Name');
+        localStorage.removeItem('role');
+        localStorage.removeItem('temp_token');
+        localStorage.removeItem('temp_email');
         this.router.navigate(['/login']);
     }
 }

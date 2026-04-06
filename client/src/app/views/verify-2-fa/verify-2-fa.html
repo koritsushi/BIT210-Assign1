@@ -1,0 +1,31 @@
+<section class="page">
+  <h2 class="title">Two-Factor Verification</h2>
+  <p class="subtitle">Enter the 6-digit code sent to your email address.</p>
+
+  <div class="card">
+    <div class="field">
+      <label>Verification Code</label>
+      <input
+        type="text"
+        [(ngModel)]="code"
+        placeholder="e.g., 123456"
+        maxlength="6"
+      />
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" (click)="onVerify()" [disabled]="loading">
+        {{ loading ? 'Verifying...' : 'Verify' }}
+      </button>
+    </div>
+
+    @if (error) {
+      <div class="error">{{ error }}</div>
+    }
+
+    <p class="hint">
+      Didn't receive a code?
+      <a class="link" (click)="goBack()">Go back to Login</a>
+    </p>
+  </div>
+</section>

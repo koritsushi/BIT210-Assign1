@@ -20,10 +20,10 @@ export async function connectDB(uri: string) {
     const client = new mongodb.MongoClient(uri);
     await client.connect();
 
-    const db = client.db("example");
+    const db = client.db("BIT210");
     await SchemaValidation(db);
 
-    const userCollection = db.collection<User>("user");
+    const userCollection = db.collection<User>("users");
     const activitesCollection = db.collection<Activity>("activity");
     const registrationsCollection = db.collection<Registration>("registration");
     const ngosCollection = db.collection<Ngo>("ngo");

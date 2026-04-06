@@ -3,16 +3,33 @@ import * as mongodb from "mongodb";
 export async function SchemaValidation(db: mongodb.Db) {
     const userSchema = {
         $jsonSchema: {
-        bsonType: "object",
-        required: ["name", "email", "department", "role"],
-        additionalProperties: false,
-        properties: {
-            _id: { bsonType: "objectId" },
-            name: { bsonType: "string" },
-            email: { bsonType: "string" },
-            department: { bsonType: "string" },
-            role: { enum: ["Admin", "Employee"] },
-        },
+            bsonType: "object",
+            required: [
+                "name", 
+                "email", 
+                "department", 
+                "role",
+                "password",
+                "is_verified",
+                "verify_token",
+                "verify_expiry",
+                "twofa_secret",
+                "twofa_enabled"
+            ],
+            additionalProperties: false,
+            properties: {
+                _id: { bsonType: "objectId" },
+                name: { bsonType: "string" },
+                email: { bsonType: "string" },
+                department: { bsonType: "string" },
+                role: { enum: ["Admin", "Employee"] },
+                password: { bsonType: "string" },
+                is_verified: { bsonType: "bool" },
+                verify_token: { bsonType: ["string", "null"] },
+                verify_expiry: { bsonType: ["date", "null"] },
+                twofa_secret: { bsonType: "string" },
+                twofa_enabled: { bsonType: "bool" }
+            },
         },
     };
 

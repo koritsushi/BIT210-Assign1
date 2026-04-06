@@ -12,17 +12,43 @@ import { CommonModule } from '@angular/common';
 })
 
 export class Login {
-    name: string = "";
+    email: string = "";
+    password: string = "";
     error: string = "";
+    showPassword: boolean = false;
 
     constructor(
         private authService: AuthService,
         private router: Router
     ) {}
 
+    togglePassword(): void {
+        this.showPassword = !this.showPassword;
+    }
+
+    validate(): string {
+        if (!this.email.trim())
+            return "Email is Required!";
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(this.email))
+            return "Please return a valid email address!";
+        if (!this.password.trim())
+            return "Password is required";
+        return '';
+    }
+
     onLogin(): void {
-        this.authService.login(this.name).subscribe({
+        this.authService.login(this.email, this.password).subscribe({
             next: (res) => {
+                // If backend requires 2FA, it returns requires2FA flag
+                if (res.requires2FA) {
+                // Store temp token for 2FA verification
+                    localStorage.setItem('temp_token', res.tempToken);
+                    localStorage.setItem('temp_email', this.email);
+                    this.router.navigate(['/verify-2fa']);
+                    return ;
+                }
+ 
                 this.authService.saveToken(res.token);
                 this.authService.saveUserId(res.user._id);
                 this.authService.saveName(res.user.name);
@@ -33,8 +59,12 @@ export class Login {
                     this.router.navigate(['./admin/dashboard']);
             },
             error: () => {
-                this.error = 'Invalid Name!';
+                this.error = 'Invalid Email or password!';
             }
         })
+    }
+
+    goToRegister(): void {
+        this.router.navigate(['/register']);
     }
 }

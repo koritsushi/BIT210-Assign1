@@ -7,15 +7,13 @@ import { Activity } from '../models/activity.model';
   providedIn: 'root'
 })
 export class ActivityService {
-    //private url = 'http://localhost:3000';
-    private url = '';
     activities$ = signal<Activity[]>([]);
     activity$ = signal<Activity>({} as Activity);
 
     constructor(private httpClient: HttpClient) { }
 
     private refreshActivities() {
-        this.httpClient.get<Activity[]>(`${this.url}/activity`)
+        this.httpClient.get<Activity[]>(`/activity`)
         .subscribe(activities => {
             this.activities$.set(activities);
         });
@@ -27,21 +25,21 @@ export class ActivityService {
     }
 
     getActivity(id: string) {
-        this.httpClient.get<Activity>(`${this.url}/activity/${id}`).subscribe(activity => {
+        this.httpClient.get<Activity>(`/activity/${id}`).subscribe(activity => {
         this.activity$.set(activity);
         return this.activity$();
         });
     }
 
     createActivity(activity: Activity) {
-        return this.httpClient.post(`${this.url}/activity`, activity, { responseType: 'text' });
+        return this.httpClient.post(`/activity`, activity, { responseType: 'text' });
     }
 
     updateActivity(id: string, activity: Activity) {
-        return this.httpClient.put(`${this.url}/activity/${id}`, activity, { responseType: 'text' });
+        return this.httpClient.put(`}/activity/${id}`, activity, { responseType: 'text' });
     }
 
     deleteActivity(id: string) {
-        return this.httpClient.delete(`${this.url}/activity/${id}`, { responseType: 'text' });
+        return this.httpClient.delete(`/activity/${id}`, { responseType: 'text' });
     }
 }

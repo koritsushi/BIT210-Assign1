@@ -6,15 +6,13 @@ import { Ngo } from '../models/ngo.model';
   providedIn: 'root'
 })
 export class NgoService {
-    //private url = 'http://localhost:3000';
-    private url = '';
     ngos$ = signal<Ngo[]>([]);
     ngo$ = signal<Ngo>({} as Ngo);
     
     constructor(private httpClient: HttpClient) { }
 
     private refreshNgo() {
-        this.httpClient.get<Ngo[]>(`${this.url}/ngo`)
+        this.httpClient.get<Ngo[]>(`/ngo`)
         .subscribe(ngos => {
             this.ngos$.set(ngos);
         });
@@ -26,21 +24,21 @@ export class NgoService {
     }
 
     getNgo(id: string) {
-        this.httpClient.get<Ngo>(`${this.url}/ngo/${id}`).subscribe(ngo => {
+        this.httpClient.get<Ngo>(`/ngo/${id}`).subscribe(ngo => {
         this.ngo$.set(ngo);
         return this.ngos$();
         });
     }
 
     createNgo(ngo: Ngo) {
-        return this.httpClient.post(`${this.url}/ngo`, ngo, { responseType: 'text' });
+        return this.httpClient.post(`/ngo`, ngo, { responseType: 'text' });
     }
 
     updateNgo(id: string, ngo: Ngo) {
-        return this.httpClient.put(`${this.url}/ngo/${id}`, ngo, { responseType: 'text' });
+        return this.httpClient.put(`/ngo/${id}`, ngo, { responseType: 'text' });
     }
 
     deleteNgo(id: string) {
-        return this.httpClient.delete(`${this.url}/ngo/${id}`, { responseType: 'text' });
+        return this.httpClient.delete(`/ngo/${id}`, { responseType: 'text' });
     }
 }

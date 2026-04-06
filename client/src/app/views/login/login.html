@@ -1,18 +1,42 @@
 <section class="page">
-    <h2 class="title">Login</h2>
-        <div class="card">
-            <div class="row">
-                <label class="field">
-                    Name
-                    <input [(ngModel)]="name" placeholder="e.g., lorem Ipsum" />
-                </label>
-            </div>
+  <h2 class="title">Login</h2>
+  <p class="subtitle">Sign in to your Service Day Dashboard account.</p>
 
-            <div class="actions">
-                <button class="btn primary" (click)="onLogin()">Login</button>
-            </div>
-        </div>
-        @if (error) {
-            <div class="error">{{ error }}</div>
-        }
+  <div class="card">
+    <div class="field">
+      <label>Email</label>
+      <input
+        type="email"
+        [(ngModel)]="email"
+        placeholder="e.g., alice@company.com"
+      />
+    </div>
+
+    <div class="field" style="margin-top: 12px;">
+      <label>Password</label>
+      <div class="password-wrap">
+        <input
+          [type]="showPassword ? 'text' : 'password'"
+          [(ngModel)]="password"
+          placeholder="Enter your password"
+        />
+        <button class="btn toggle-btn" type="button" (click)="togglePassword()">
+          {{ showPassword ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" (click)="onLogin()">Login</button>
+    </div>
+
+    @if (error) {
+      <div class="error">{{ error }}</div>
+    }
+
+    <p class="hint">
+      Don't have an account?
+      <a class="link" (click)="goToRegister()">Register here</a>
+    </p>
+  </div>
 </section>
