@@ -1,16 +1,21 @@
 <nav class="nav">
     @if (auth.isLoggedIn() && auth.getRole() === "Employee") {
         <a 
-        routerLink="/employee/dashboard" 
-        routerLinkActive="active"
-        class="nav-item">
-        Dashboard
+            routerLink="/employee/dashboard" 
+            routerLinkActive="active"
+            class="nav-item">
+            Dashboard
         </a>
         <a 
             routerLink="/employee/notification" 
             routerLinkActive="active"
             class="nav-item">
             Notifications
+        </a>
+        <a 
+            routerLink="/employee/settings" 
+            routerLinkActive="active" 
+            class="nav-item">Settings
         </a>
     } @else if (auth.isLoggedIn() && auth.getRole() === "Admin") {
         <a
@@ -30,6 +35,11 @@
             routerLinkActive="active"
             class="nav-item">
             Send Notifications
+        </a>
+        <a 
+            routerLink="/admin/settings" 
+            routerLinkActive="active" 
+            class="nav-item">Settings
         </a>
     }
 

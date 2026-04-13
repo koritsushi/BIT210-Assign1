@@ -1,0 +1,55 @@
+<section class="page">
+  <h2 class="title">Account Settings</h2>
+  <p class="subtitle">Manage your account preferences and security settings.</p>
+
+  <!-- Account Info Card -->
+  <div class="card">
+    <h3 class="card-title">Account Information</h3>
+    <div class="info-row">
+      <span class="info-label">Name</span>
+      <span class="info-value">{{ name }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Email</span>
+      <span class="info-value">{{ email }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Role</span>
+      <span class="info-value">{{ role }}</span>
+    </div>
+  </div>
+
+  <!-- 2FA Card -->
+  <div class="card">
+    <h3 class="card-title">Two-Factor Authentication</h3>
+    <p class="card-desc">
+      When enabled, you will be asked to enter a 6-digit code
+      sent to your email every time you log in.
+    </p>
+
+    @if (statusMessage) {
+      <div class="feedback" [class.success]="statusType === 'success'" [class.error]="statusType === 'error'">
+        {{ statusMessage }}
+      </div>
+    }
+
+    <div class="toggle-row">
+      <div>
+        <p class="toggle-label">{{ twofa_enabled ? '2FA is ON' : '2FA is OFF' }}</p>
+        <p class="toggle-hint">
+          {{ twofa_enabled
+            ? 'Your account is protected with two-factor authentication.'
+            : 'Enable two-factor authentication for extra security.' }}
+        </p>
+      </div>
+
+      <button
+        class="btn toggle-btn"
+        [class.active]="twofa_enabled"
+        [disabled]="loading"
+        (click)="toggle2FA()">
+        {{ loading ? 'Saving...' : (twofa_enabled ? 'Turn Off' : 'Turn On') }}
+      </button>
+    </div>
+  </div>
+</section>

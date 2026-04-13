@@ -1,14 +1,21 @@
 import * as dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { connectDB, connectMockDB } from "./database";
 import dns from "node:dns/promises";
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 const app = express();
 dns.setServers(["1.1.1.1"]);
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:4200',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
+app.use(helmet());
 const { ATLAS_URI } = process.env;
 //live database
 if (!ATLAS_URI) {
@@ -25,6 +32,21 @@ import { ngoRouter } from "./routes/ngo.routes";
 import { authRouter } from "./routes/auth.routes";
 import { notificationRouter } from "./routes/notification.routes";
 
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,  // 15 minutes
+    max: 100,                   // max 100 requests per window
+    message: { message: 'Too many requests, please try again later.' }
+});
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,  // 15 minutes
+    max: 10,                    // max 10 login attempts
+    message: { message: 'Too many login attempts, please try again later.' }
+});
+
+app.use(generalLimiter);
+app.use('/auth/login', authLimiter);
+app.use('/auth/register', authLimiter);
 app.use("/auth", authRouter);
 app.use("/users", userRouter);
 app.use("/activity", activityRouter);

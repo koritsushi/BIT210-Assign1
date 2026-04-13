@@ -25,8 +25,7 @@ export class UserService {
 
     getUser(id: string) {
         this.httpClient.get<User>(`/users/${id}`).subscribe(user => {
-        this.user$.set(user);
-        return this.user$();
+            this.user$.set(user);
         });
     }
 

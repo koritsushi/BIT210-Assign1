@@ -1,0 +1,143 @@
+:host {
+  display: block;
+}
+
+.page {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 560px;
+}
+
+.title {
+  margin: 0 0 6px 0;
+}
+
+.subtitle {
+  margin: 0;
+  color: #444;
+  font-size: 14px;
+}
+
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 18px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.card-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #555;
+  line-height: 1.6;
+}
+
+/* Account info rows */
+.info-row {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 8px;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.info-label {
+  width: 80px;
+  color: #6b7280;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.info-value {
+  color: #1a1a2e;
+}
+
+/* Toggle row */
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.toggle-label {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.toggle-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Buttons */
+.btn {
+  padding: 9px 18px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.toggle-btn {
+  background: #fff;
+  border-color: #1976d2;
+  color: #1976d2;
+}
+
+.toggle-btn.active {
+  background: #1976d2;
+  border-color: #1976d2;
+  color: #fff;
+}
+
+.toggle-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Feedback */
+.feedback {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.feedback.success {
+  background: #e9f8ef;
+  color: #1f7a45;
+  border: 1px solid #bfe8cd;
+}
+
+.feedback.error {
+  background: #fff1f1;
+  color: #b00020;
+  border: 1px solid #f0b7b2;
+}
