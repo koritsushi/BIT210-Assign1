@@ -2,13 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { QRCodeComponent } from 'angularx-qrcode';
-import { Checkin, CheckInRecord, CheckInStatus, ActivityMeta } from '../../../models/checkin.model';
+import { CheckInRecord, CheckInStatus, ActivityMeta } from '../../../models/checkin.model';
 import { Activity } from '../../../models/activity.model';
 import { Ngo } from '../../../models/ngo.model';
 import { Registration } from '../../../models/registration.model';
 import { User } from '../../../models/user.model';
 import { ActivityService } from '../../../services/activity.service';
-import { CheckinService } from '../../../services/checkin.service';
 import { NgoService } from '../../../services/ngo.service';
 import { RegistrationService } from '../../../services/registration.servicce';
 import { UserService } from '../../../services/user.service';
@@ -21,14 +20,12 @@ import { UserService } from '../../../services/user.service';
 })
 export class ActivityCheckIn implements OnInit, OnDestroy {
   private activityService = inject(ActivityService);
-  private checkinService = inject(CheckinService);
   private registrationService = inject(RegistrationService);
   private userService = inject(UserService);
   private ngoService = inject(NgoService);
 
   // Observables for activities, registrations, users, and NGOs
   activities = this.activityService.activities$;
-  checkins = this.checkinService.checkins$;
   registrations = this.registrationService.registrations$;
   users = this.userService.users$;
   ngos = this.ngoService.ngos$;
@@ -58,7 +55,6 @@ export class ActivityCheckIn implements OnInit, OnDestroy {
     return buildRecords(
       this.activities(),
       this.registrations(),
-      this.checkins(),
       this.users(),
       this.ngos(),
     );
@@ -140,7 +136,6 @@ export class ActivityCheckIn implements OnInit, OnDestroy {
 
   private refreshDynamicData(): void {
     this.registrationService.getRegistrations();
-    this.checkinService.getCheckins();
   }
 
   private startPolling(): void {
@@ -160,7 +155,6 @@ export function getActivityOptions(activities: Activity[], ngos: Ngo[]): string[
 export function buildRecords(
     activities: Activity[],
     registrations: Registration[],
-    checkins: Checkin[],
     users: User[],
     ngos: Ngo[],
 ): CheckInRecord[] {
@@ -170,18 +164,6 @@ export function buildRecords(
     const userMap = new Map<string, User>();
     users.forEach((user) => userMap.set(toText(user._id), user));
 
-    const checkinByRegistrationId = new Map<string, Checkin>();
-    const checkinByUserActivity = new Map<string, Checkin>();
-    checkins.forEach((checkin) => {
-      const registrationId = toText(checkin.registration_id);
-      if (registrationId) {
-        checkinByRegistrationId.set(registrationId, checkin);
-      }
-
-      const pairKey = `${toText(checkin.user_id)}::${toText(checkin.activity_id)}`;
-      checkinByUserActivity.set(pairKey, checkin);
-    });
-
     return registrations
       .filter((registration) => registration.status !== 'Cancelled')
       .map((registration) => {
@@ -190,13 +172,9 @@ export function buildRecords(
         if (!activity || !user) return null;
 
         const recordId = getRecordId(registration);
-        const pairKey = `${toText(registration.user_id)}::${toText(registration.activity_id)}`;
-        const matchedCheckin = checkinByRegistrationId.get(recordId)
-          ?? checkinByUserActivity.get(pairKey);
-        const isLegacyAttended = registration.status === 'Attended';
-        const status: CheckInStatus = matchedCheckin || isLegacyAttended ? 'Attended' : 'Absent';
-        const timeSource = matchedCheckin?.checkin_time
-          ?? (isLegacyAttended ? (registration.updated_at || registration.registered_at) : undefined);
+        const isAttended = registration.status === 'Attended';
+        const status: CheckInStatus = isAttended ? 'Attended' : 'Absent';
+        const timeSource = isAttended ? (registration.updated_at || registration.registered_at) : undefined;
 
         return {
           id: recordId,
