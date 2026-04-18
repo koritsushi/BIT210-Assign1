@@ -5,7 +5,7 @@
 
 .dashboard-card {
   width: 100%;
-  max-width: 1320px;
+  max-width: 1480px;
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
@@ -38,19 +38,18 @@ h3 {
 
 table {
   width: 100%;
-  min-width: 0;
   border-collapse: collapse;
-  table-layout: auto;
+  table-layout: fixed;
 }
 
 th,
 td {
-  padding: 12px 10px;
+  padding: 12px;
   text-align: left;
   vertical-align: top;
   font-size: 13px;
   line-height: 1.4;
-  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 thead tr {
@@ -86,46 +85,47 @@ th {
 
 th:nth-child(1),
 td:nth-child(1) {
-  width: 52px;
-  min-width: 52px;
+  width: 6%;
 }
 
 th:nth-child(2),
 td:nth-child(2) {
-  min-width: 180px;
+  width: 11%;
 }
 
 th:nth-child(3),
-td:nth-child(3),
+td:nth-child(3) {
+  width: 12%;
+}
+
 th:nth-child(4),
 td:nth-child(4) {
-  min-width: 120px;
+  width: 12%;
 }
 
 th:nth-child(5),
 td:nth-child(5) {
-  min-width: 128px;
-  white-space: nowrap;
+  width: 11%;
 }
 
 th:nth-child(6),
 td:nth-child(6) {
-  min-width: 130px;
+  width: 15%;
 }
 
 th:nth-child(7),
 td:nth-child(7) {
-  min-width: 90px;
+  width: 11%;
 }
 
 th:nth-child(8),
 td:nth-child(8) {
-  min-width: 140px;
+  width: 7%;
 }
 
 th:nth-child(9),
 td:nth-child(9) {
-  min-width: 100px;
+  width: 11%;
 }
 
 .badge {
@@ -151,22 +151,26 @@ td:nth-child(9) {
 }
 
 .actions {
-  white-space: nowrap;
   display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
 }
 
 .actions .btn.small {
+  width: 96px;
+  min-width: 96px;
   padding: 6px 10px;
-  min-width: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+  white-space: nowrap;
 }
 
 .form-card {
   width: 100%;
-  max-width: 1320px;
+  max-width: 1480px;
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
