@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { CheckInRecord, CheckInStatus, ActivityMeta } from '../../../models/checkin.model';
+import { QRCodeComponent } from 'angularx-qrcode';
+import { Checkin, CheckInRecord, CheckInStatus, ActivityMeta } from '../../../models/checkin.model';
 import { Activity } from '../../../models/activity.model';
 import { Ngo } from '../../../models/ngo.model';
 import { Registration } from '../../../models/registration.model';
@@ -14,11 +15,11 @@ import { UserService } from '../../../services/user.service';
 
 @Component({
   selector: 'app-activity-check-in',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, QRCodeComponent],
   templateUrl: './activity-check-in.html',
   styleUrl: './activity-check-in.css',
 })
-export class ActivityCheckIn implements OnInit {
+export class ActivityCheckIn implements OnInit, OnDestroy {
   private activityService = inject(ActivityService);
   private checkinService = inject(CheckinService);
   private registrationService = inject(RegistrationService);
@@ -27,6 +28,7 @@ export class ActivityCheckIn implements OnInit {
 
   // Observables for activities, registrations, users, and NGOs
   activities = this.activityService.activities$;
+  checkins = this.checkinService.checkins$;
   registrations = this.registrationService.registrations$;
   users = this.userService.users$;
   ngos = this.ngoService.ngos$;
@@ -34,13 +36,18 @@ export class ActivityCheckIn implements OnInit {
   // State for selected activity index and report visibility
   selectedActivityIndex = 0; // index into activityOptions
   showReport = false;
-
-  // store check-in status and time updates locally (casue mock data)
-  private readonly checkInStatusMap: Record<string, CheckInStatus> = {};
-  private readonly checkInTimeMap: Record<string, string> = {};
+  generatedQrText = '';
+  private refreshTimer?: ReturnType<typeof setInterval>;
 
   ngOnInit(): void {
     this.loadData();
+    this.startPolling();
+  }
+
+  ngOnDestroy(): void {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
   }
 
   get activityOptions(): string[] {// Generate unique activity options for dropdown based on activities and NGOs
@@ -51,10 +58,9 @@ export class ActivityCheckIn implements OnInit {
     return buildRecords(
       this.activities(),
       this.registrations(),
+      this.checkins(),
       this.users(),
       this.ngos(),
-      this.checkInStatusMap,
-      this.checkInTimeMap,
     );
   }
 
@@ -68,12 +74,21 @@ export class ActivityCheckIn implements OnInit {
     return this.activityOptions[this.selectedActivityIndex] || '';
   }
 
+  get currentActivity(): Activity | undefined {
+    return this.activities()[this.selectedActivityIndex];
+  }
+
+  get hasGeneratedQr(): boolean {
+    return this.generatedQrText.trim() !== '';
+  }
+
   generateReport(): void {
     this.showReport = true;
   }
 
   selectActivity(index: number): void {
     this.selectedActivityIndex = index;
+    this.generatedQrText = '';
   }
 
   get reportActivityName(): string {
@@ -106,71 +121,32 @@ export class ActivityCheckIn implements OnInit {
     if (!this.filteredRecords.length) return 0;
     return Math.round((this.attendedCount / this.filteredRecords.length) * 100);
   }
+  generateQrCode(): void {
+    const activity = this.currentActivity;
+    if (!activity) {
+      this.generatedQrText = '';
+      return;
+    }
 
-
-
-  // QR code related getters
-  get qrCodeNumber(): string {
-    // use the position in the options array (1-based) so duplicates get unique codes
-    return String(this.selectedActivityIndex + 1);
-  }
-
-  get qrImageUrl(): string {
-    const codeNumber = Number(this.qrCodeNumber);
-    if (!Number.isInteger(codeNumber) || codeNumber < 1) return '';
-    return `/qrcodes/${codeNumber}.png`;
-  }
-
-  get hasQrImage(): boolean {
-    return this.qrImageUrl !== '';
-  }
-
-  get qrActivityName(): string {
-    return this.currentQrActivityName || 'N/A';
-  }
-
-
-  onStatusChange(recordId: string, status: CheckInStatus): void {
-    const registration = this.checkinService.findRegistration(this.registrations(), recordId);
-    if (!registration?._id) return;
-
-    const previousStatus = this.checkInStatusMap[recordId]
-      ?? (registration.status === 'Attended' ? 'Attended' : 'Absent');
-    const previousTime = this.checkInTimeMap[recordId];
-    const nextTime = status === 'Attended'
-      ? formatDateTime(new Date())
-      : formatDateTime(registration.updated_at || registration.registered_at);
-
-    this.checkInStatusMap[recordId] = status;
-    this.checkInTimeMap[recordId] = nextTime;
-
-    const payload = this.checkinService.createStatusUpdatePayload(registration, status);
-
-    this.registrationService.updateRegistration(String(registration._id), payload).subscribe({
-      next: () => {
-        this.registrationService.getRegistrations();
-      },
-      error: () => {
-        this.checkInStatusMap[recordId] = previousStatus;
-        if (previousTime) {
-          this.checkInTimeMap[recordId] = previousTime;
-        } else {
-          delete this.checkInTimeMap[recordId];
-        }
-        alert('Failed to update check-in status.');
-      },
-    });
+    this.generatedQrText = JSON.stringify(buildQrPayload(activity, this.ngos()));
   }
 
   private loadData(): void { // Load check-in list data for the component
     this.activityService.getActivities();
-    this.registrationService.getRegistrations();
     this.userService.getUsers();
     this.ngoService.getNgos();
+    this.refreshDynamicData();
   }
 
-  private get currentQrActivityName(): string { // Determine the activity name for QR code generation based on selection
-    return this.currentActivitySelection;
+  private refreshDynamicData(): void {
+    this.registrationService.getRegistrations();
+    this.checkinService.getCheckins();
+  }
+
+  private startPolling(): void {
+    this.refreshTimer = setInterval(() => {
+      this.refreshDynamicData();
+    }, 4000);
   }
 }
 
@@ -184,16 +160,27 @@ export function getActivityOptions(activities: Activity[], ngos: Ngo[]): string[
 export function buildRecords(
     activities: Activity[],
     registrations: Registration[],
+    checkins: Checkin[],
     users: User[],
     ngos: Ngo[],
-    checkInStatusMap: Record<string, CheckInStatus>,
-    checkInTimeMap: Record<string, string>,
 ): CheckInRecord[] {
     const activityMap = new Map<string, Activity>();
     activities.forEach((activity) => activityMap.set(getActivityId(activity), activity));
 
     const userMap = new Map<string, User>();
     users.forEach((user) => userMap.set(toText(user._id), user));
+
+    const checkinByRegistrationId = new Map<string, Checkin>();
+    const checkinByUserActivity = new Map<string, Checkin>();
+    checkins.forEach((checkin) => {
+      const registrationId = toText(checkin.registration_id);
+      if (registrationId) {
+        checkinByRegistrationId.set(registrationId, checkin);
+      }
+
+      const pairKey = `${toText(checkin.user_id)}::${toText(checkin.activity_id)}`;
+      checkinByUserActivity.set(pairKey, checkin);
+    });
 
     return registrations
       .filter((registration) => registration.status !== 'Cancelled')
@@ -203,15 +190,19 @@ export function buildRecords(
         if (!activity || !user) return null;
 
         const recordId = getRecordId(registration);
-        const status = checkInStatusMap[recordId]
-          ?? (registration.status === 'Attended' ? 'Attended' : 'Absent');
+        const pairKey = `${toText(registration.user_id)}::${toText(registration.activity_id)}`;
+        const matchedCheckin = checkinByRegistrationId.get(recordId)
+          ?? checkinByUserActivity.get(pairKey);
+        const isLegacyAttended = registration.status === 'Attended';
+        const status: CheckInStatus = matchedCheckin || isLegacyAttended ? 'Attended' : 'Absent';
+        const timeSource = matchedCheckin?.checkin_time
+          ?? (isLegacyAttended ? (registration.updated_at || registration.registered_at) : undefined);
 
         return {
           id: recordId,
           name: user.name,
           department: user.department,
-          checkInTime: checkInTimeMap[recordId] ?? 
-          formatDateTime(registration.updated_at || registration.registered_at),
+          checkInTime: timeSource ? formatDateTime(timeSource) : '--',
           status,
           activity: getActivityName(activity, ngos),
         };
@@ -228,6 +219,18 @@ export function getActivityMeta(activityName: string, activities: Activity[], ng
     return {
       date: toDateOnly(activity.date),
       location: getActivityLocation(activity, ngos),
+    };
+}
+
+export interface ActivityQrPayload {
+    activityId: string;
+    activityName: string;
+}
+
+export function buildQrPayload(activity: Activity, ngos: Ngo[]): ActivityQrPayload {
+    return {
+      activityId: getActivityId(activity),
+      activityName: getActivityName(activity, ngos),
     };
 }
 

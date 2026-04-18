@@ -59,11 +59,23 @@
     <aside class="card qr-card">
       <h3>QR Code</h3>
       <div class="qr-box">
-        <img *ngIf="hasQrImage" [src]="qrImageUrl" alt="Generated QR Code" class="qr-image" loading="lazy" />
-        <span *ngIf="!hasQrImage">QR</span>
+        @if (hasGeneratedQr) {
+          <qrcode
+            [qrdata]="generatedQrText"
+            [width]="164"
+            [margin]="1"
+            [errorCorrectionLevel]="'M'"
+            [elementType]="'canvas'"
+            ariaLabel="Generated Activity QR Code"
+            title="Generated Activity QR Code"
+          ></qrcode>
+        } @else {
+          <span>QR</span>
+        }
       </div>
-      <p class="qr-meta">Activity: {{ qrActivityName }}</p>
-      <p class="qr-meta">Code: {{ qrCodeNumber }}</p>
+      <button class="btn primary qr-generate-btn" type="button" (click)="generateQrCode()">
+        Generate QR Code
+      </button>
     </aside>
   </div>
 
