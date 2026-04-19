@@ -79,6 +79,7 @@ export async function SchemaValidation(db: mongodb.Db) {
             user_id: { bsonType: "objectId" },
             activity_id: { bsonType: "objectId" },
             registered_at: { bsonType: "date" },
+            checkedin_at: { bsonType: "date" },
             updated_at: { bsonType: "date" },
             status: { bsonType: "bool" },
         },
@@ -110,8 +111,8 @@ export async function SchemaValidation(db: mongodb.Db) {
     const collections = [
         { name: "users", schema: userSchema },
         { name: "ngos", schema: ngoSchema },
-        { name: "activities", schema: activitySchema },
-        { name: "registrations", schema: registrationSchema },
+        { name: "activitiy", schema: activitySchema },
+        { name: "registration", schema: registrationSchema },
         { name: "notification", schema: notificationSchema}
     ];
 

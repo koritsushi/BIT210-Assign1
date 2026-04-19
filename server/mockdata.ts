@@ -59,7 +59,7 @@ export const mockActivities: Activity[] = [
 ];
 
 export const mockRegistrations: Registration[] = [  
-  { _id: registered1, user_id: userId1, activity_id: activityId1, registered_at: new Date("2026-03-01T10:00:00"), updated_at: new Date("2026-03-01T10:00:00"), status: "Registered" },
+  { _id: registered1, user_id: userId1, activity_id: activityId1, registered_at: new Date("2026-03-01T10:00:00"), checkedin_at: null, updated_at: new Date("2026-03-01T10:00:00"), status: "Registered" },
 ];
 
 export const mockNotifications: Notification[] = [

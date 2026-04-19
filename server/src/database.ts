@@ -26,7 +26,7 @@ export async function connectDB(uri: string) {
     const userCollection = db.collection<User>("users");
     const activitesCollection = db.collection<Activity>("activity");
     const registrationsCollection = db.collection<Registration>("registration");
-    const ngosCollection = db.collection<Ngo>("ngo");
+    const ngosCollection = db.collection<Ngo>("ngos");
     const notificationCollection = db.collection<Ngo>("notification");
 
     collections.users = userCollection;

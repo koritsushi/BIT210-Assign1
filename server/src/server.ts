@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 dns.setServers(["1.1.1.1"]);
 app.use(cors({
-    origin: 'http://localhost:4200',
+    origin: process.env.CLIENT_URL,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -31,6 +31,8 @@ import { registrationRouter } from "./routes/registration.routes";
 import { ngoRouter } from "./routes/ngo.routes";
 import { authRouter } from "./routes/auth.routes";
 import { notificationRouter } from "./routes/notification.routes";
+import { authMiddleware } from "./authMiddleware";
+import { requireRole } from "./roleMiddleware";
 
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,  // 15 minutes
@@ -44,10 +46,17 @@ const authLimiter = rateLimit({
     message: { message: 'Too many login attempts, please try again later.' }
 });
 
+//public routes
+app.use("/auth", authRouter);
+//route middleware (NOT READY)
+//app.use(authMiddleware);
+
+//api limit
 app.use(generalLimiter);
 app.use('/auth/login', authLimiter);
 app.use('/auth/register', authLimiter);
-app.use("/auth", authRouter);
+
+//api routes
 app.use("/users", userRouter);
 app.use("/activity", activityRouter);
 app.use("/registration", registrationRouter);
