@@ -1,7 +1,6 @@
 import * as express from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../database";
-import { mockActivities } from "../../mockdata";
 
 export const activityRouter = express.Router();
 activityRouter.use(express.json());
@@ -19,15 +18,22 @@ activityRouter.get("/", async(_req, res) => {
 
 activityRouter.get("/:id", async(req, res) => {
     try {
-        const id = req?.params?.id;
-        const querry = { _id: new ObjectId(id) };
-        const activity = await collections?.activites?.findOne(querry);
+        const id = String(req?.params?.id ?? "").trim();
+        let activity: any = null;
 
-        if (activity) {
-            res.status(200).send(activity);
-        } else {
-            res.status(404).send(`Failed to find an activity: ID: ${id}`);
+        // Some old records use ObjectId, some use string _id.
+        for (const query of getActivityQueries(id)) {
+            activity = await collections?.activites?.findOne(query);
+            if (activity) {
+                break;
+            }
         }
+
+        if (!activity) {
+            return res.status(404).send(`Failed to find an activity: ID: ${id}`);
+        }
+
+        res.status(200).send(activity);
     } catch (error) {
         res.status(500).send(error instanceof Error ? 
             error.message : "Unkown Error");
@@ -37,13 +43,17 @@ activityRouter.get("/:id", async(req, res) => {
 activityRouter.post("/", async (req, res) => {
     try {
         const activity = req.body;
-        const result = await collections?.activites?.insertOne(activity);
 
-        if (result?.acknowledged) {
-            res.status(201).send(`Created a new activity: ID ${result.insertedId}.`);
-        } else {
-            res.status(500).send("Failed to create a new activity.");
+        // Skip schema validation here so existing old-format activity data can still be saved.
+        const result = await collections?.activites?.insertOne(activity, {
+            bypassDocumentValidation: true,
+        });
+
+        if (!result?.acknowledged) {
+            return res.status(500).send("Failed to create a new activity.");
         }
+
+        res.status(201).send(`Created a new activity: ID ${result.insertedId}.`);
     } catch (error) {
         console.error(error);
         res.status(400).send(error instanceof Error ? error.message : "Unknown error");
@@ -52,18 +62,28 @@ activityRouter.post("/", async (req, res) => {
 
 activityRouter.put("/:id", async (req, res) => {
     try {
-        const id = req?.params?.id;
+        const id = String(req?.params?.id ?? "").trim();
         const activity = req.body;
-        const query = { _id: new ObjectId(id) };
-        const result = await collections?.activites?.updateOne(query, { $set: activity });
+        let result: any = null;
 
-        if (result && result.matchedCount) {
-            res.status(200).send(`Updated an activity: ID ${id}.`);
-        } else if (!result?.matchedCount) {
-            res.status(404).send(`Failed to find an activity: ID ${id}`);
-        } else {
-            res.status(304).send(`Failed to update an activity: ID ${id}`);
+        // Try both possible _id formats.
+        for (const query of getActivityQueries(id)) {
+            result = await collections?.activites?.updateOne(
+                query,
+                { $set: activity },
+                { bypassDocumentValidation: true },
+            );
+
+            if (result?.matchedCount) {
+                break;
+            }
         }
+
+        if (!result?.matchedCount) {
+            return res.status(404).send(`Failed to find an activity: ID ${id}`);
+        }
+
+        res.status(200).send(`Updated an activity: ID ${id}.`);
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
         console.error(message);
@@ -73,20 +93,41 @@ activityRouter.put("/:id", async (req, res) => {
 
 activityRouter.delete("/:id", async (req, res) => {
     try {
-        const id = req?.params?.id;
-        const query = { _id: new ObjectId(id) };
-        const result = await collections?.activites?.deleteOne(query);
+        const id = String(req?.params?.id ?? "").trim();
+        let result: any = null;
 
-        if (result && result.deletedCount) {
-            res.status(202).send(`Removed an activity: ID ${id}`);
-        } else if (!result) {
-            res.status(400).send(`Failed to remove an activity: ID ${id}`);
-        } else if (!result.deletedCount) {
-            res.status(404).send(`Failed to find an activity: ID ${id}`);
+        // Try both possible _id formats.
+        for (const query of getActivityQueries(id)) {
+            result = await collections?.activites?.deleteOne(query);
+            if (result?.deletedCount) {
+                break;
+            }
         }
+
+        if (!result?.deletedCount) {
+            return res.status(404).send(`Failed to find an activity: ID ${id}`);
+        }
+
+        res.status(202).send(`Removed an activity: ID ${id}`);
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
         console.error(message);
         res.status(400).send(message);
     }
 });
+
+function getActivityQueries(id: string): any[] {
+    const text = String(id ?? "").trim();
+    const queries: any[] = [];
+
+    if (!text) {
+        return queries;
+    }
+
+    if (ObjectId.isValid(text)) {
+        queries.push({ _id: new ObjectId(text) });
+    }
+
+    queries.push({ _id: text });
+    return queries;
+}
