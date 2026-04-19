@@ -13,14 +13,14 @@
     <div class="activity-list-bar-inner card">
       <label class="activity-list-label">Activities</label>
       <div class="activity-list horizontal" role="list">
-        @for (activity of activityOptions; track $index) {
+        @for (activity of activityOptions; track activity.id) {
           <button
             class="activity-chip"
             type="button"
-            [class.active]="$index === selectedActivityIndex"
-            (click)="selectActivity($index)"
+            [class.active]="activity.id === currentActivityId"
+            (click)="selectActivity(activity.id)"
           >
-            {{ activity }}
+            {{ activity.label }}
           </button>
         }
       </div>
