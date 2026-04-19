@@ -17,4 +17,5 @@ export interface Notification {
     scheduled_at: Date | null;
     repeat_interval_minutes: number | null,
     repeat_until: Date | null;
+    reminder_laber: string | null;
 }

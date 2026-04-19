@@ -103,25 +103,26 @@ export async function SchemaValidation(db: mongodb.Db) {
     };
 
     const notificationSchema = {
-        $jsonSchema: {
+    $jsonSchema: {
         bsonType: "object",
-        required: ["type", "message", "is_broadcast", "is_read_by", "deleted_by", "sent_at"],
+        required: ["type", "message", "is_broadcast", "is_read_by", "deleted_by"],
         properties: {
-            _id: { bsonType: "objectId" },
-            user_id: { bsonType: "string" },        // not required — optional for broadcasts
-            activity_id: { bsonType: "string" },    // not required — optional
-            type: { enum: ["Registration", "Cancellation", "Reminder", "Update", "Broadcast"] },
-            message: { bsonType: "string" },
-            is_broadcast: { bsonType: "bool" },
-            is_read_by: { bsonType: "array" },
-            deleted_by: { bsonType: "array" },
-            sent_at: { bsonType: "date" },
-            scheduled_at: { bsonType: ["date", "null"] },
-            repeat_interval_minutes: { bsonType: ["int", "null"] },
-            repeat_until: { bsonType: ["date", "null"] },
+            _id:                      { bsonType: "objectId" },
+            user_id:                  { bsonType: ["string", "null"] },
+            activity_id:              { bsonType: ["string", "null"] },
+            type:                     { enum: ["Registration", "Cancellation", "Reminder", "Update", "Broadcast"] },
+            message:                  { bsonType: "string" },
+            is_broadcast:             { bsonType: "bool" },
+            is_read_by:               { bsonType: "array" },
+            deleted_by:               { bsonType: "array" },
+            sent_at:                  { bsonType: ["date", "null"] },
+            scheduled_at:             { bsonType: ["date", "null"] },
+            repeat_interval_minutes:  { bsonType: ["int", "null"] },
+            repeat_until:             { bsonType: ["date", "null"] },
+            reminder_label:           { bsonType: ["string", "null"] },
         }
     }
-    };
+};
 
   // Apply all schemas
     const collections = [

@@ -77,6 +77,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-03-01T10:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
+        reminder_laber: null,
     },
 
     // --- Cancellation notification ---
@@ -93,6 +94,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-03-05T09:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
+        reminder_laber: null,
     },
 
     // --- Scheduled reminder — 1 week before ---
@@ -109,6 +111,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-04-03T08:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
+        reminder_laber: null,
     },
 
     // --- Scheduled reminder — 3 days before ---
@@ -125,6 +128,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-04-07T08:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
+        reminder_laber: null,
     },
 
     // --- Scheduled reminder — 1 day before ---
@@ -141,6 +145,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-04-09T08:00:00"),
         repeat_interval_minutes: 60,          // repeat every 60 mins
         repeat_until: new Date("2026-04-09T20:00:00"),
+        reminder_laber: null,
     },
 
     // --- Activity update ---
@@ -157,6 +162,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-03-15T14:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
+        reminder_laber: null,
     },
 
     // --- Urgent update — last available slots ---
@@ -173,6 +179,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-03-20T10:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
+        reminder_laber: null,
     },
 
     // --- Admin broadcast to all employees ---
@@ -189,5 +196,6 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-03-01T09:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
+        reminder_laber: null,
     },
 ]

@@ -34,6 +34,7 @@ import { authRouter } from "./routes/auth.routes";
 import { notificationRouter } from "./routes/notification.routes";
 import { authMiddleware } from "./authMiddleware";
 import { requireRole } from "./roleMiddleware";
+import { startNotificationScheduler } from "./notification.scheduler";
 
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,  // 15 minutes
@@ -69,6 +70,7 @@ connectDB(ATLAS_URI).then(() => {
     app.listen(3000, () => {
         console.log(`Server running at http://localhost:3000...`);
     });
+    startNotificationScheduler();
 }).catch((error) => console.error(error));
 
 // hardcode database
