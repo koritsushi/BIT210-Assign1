@@ -1,11 +1,13 @@
+export type CheckInStatus = 'Absent' | 'Attended';
+
 export interface Checkin {
     _id?: string;
     registration_id: string;
+    user_id: string;
+    activity_id: string;
     checkin_time: Date | string;
-    method: string;
+    status: CheckInStatus;
 }
-
-export type CheckInStatus = 'Absent' | 'Attended';
 
 export interface CheckInRecord {
     id: string;

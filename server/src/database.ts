@@ -2,6 +2,7 @@ import * as mongodb from "mongodb";
 import { SchemaValidation } from "./validationSchema";
 import { User } from "./modal/user";
 import { Activity } from "./modal/activity";
+import { Checkin } from "./modal/checkin";
 import { Registration } from "./modal/registration";
 import { Ngo } from "./modal/ngo";
 import { Notification } from "./modal/notification";
@@ -11,6 +12,7 @@ import { MockCollection } from "./mockCollection";
 export const collections: {
     users?: mongodb.Collection<User> | any;
     activites?: mongodb.Collection<Activity> | any;
+    checkins?: mongodb.Collection<Checkin> | any;
     registrations?: mongodb.Collection<Registration> | any;
     ngos?: mongodb.Collection<Ngo> | any;
     notifications?: mongodb.Collection<Notification> | any;
@@ -25,12 +27,14 @@ export async function connectDB(uri: string) {
 
     const userCollection = db.collection<User>("users");
     const activitesCollection = db.collection<Activity>("activity");
+    const checkinsCollection = db.collection<Checkin>("checkins");
     const registrationsCollection = db.collection<Registration>("registration");
     const ngosCollection = db.collection<Ngo>("ngos");
     const notificationCollection = db.collection<Ngo>("notification");
 
     collections.users = userCollection;
     collections.activites = activitesCollection;
+    collections.checkins = checkinsCollection;
     collections.registrations = registrationsCollection;
     collections.ngos = ngosCollection;
     collections.notifications = notificationCollection;

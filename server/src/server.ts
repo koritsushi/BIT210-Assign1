@@ -28,6 +28,7 @@ if (!ATLAS_URI) {
 import { userRouter } from "./routes/user.routes";
 import { activityRouter } from "./routes/activity.routes";
 import { registrationRouter } from "./routes/registration.routes";
+import { checkinRouter } from "./routes/checkin.routes";
 import { ngoRouter } from "./routes/ngo.routes";
 import { authRouter } from "./routes/auth.routes";
 import { notificationRouter } from "./routes/notification.routes";
@@ -59,6 +60,7 @@ app.use('/auth/register', authLimiter);
 //api routes
 app.use("/users", userRouter);
 app.use("/activity", activityRouter);
+app.use("/checkin", checkinRouter);
 app.use("/registration", registrationRouter);
 app.use("/ngo", ngoRouter);
 app.use("/notification", notificationRouter);

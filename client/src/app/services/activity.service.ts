@@ -36,7 +36,7 @@ export class ActivityService {
     }
 
     updateActivity(id: string, activity: Activity) {
-        return this.httpClient.put(`}/activity/${id}`, activity, { responseType: 'text' });
+        return this.httpClient.put(`/activity/${id}`, activity, { responseType: 'text' });
     }
 
     deleteActivity(id: string) {
