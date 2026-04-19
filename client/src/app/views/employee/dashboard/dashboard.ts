@@ -77,7 +77,7 @@ export class Dashboard implements OnInit {
     return this.registrations().some(
       r => r.activity_id?.toString() === activityId?.toString() &&
         r.user_id?.toString() === userId?.toString() &&
-        r.status === 'Registered'
+        r.status === "Registered"
     );
   }
 
@@ -112,9 +112,9 @@ export class Dashboard implements OnInit {
       user_id: userId,
       activity_id: activity._id!,
       registered_at: new Date(),
-      checkin_at: new Date(),
+      checkedin_at: null,
       updated_at: new Date(),
-      status: 'Registered'
+      status: "Registered"
     };
 
     this.registrationService.createRegistration(newRegistration).subscribe({
@@ -185,9 +185,9 @@ export class Dashboard implements OnInit {
       user_id: userId,
       activity_id: activity._id!,
       registered_at: new Date(),
-      checkin_at: new Date(),
+      checkedin_at: null,
       updated_at: new Date(),
-      status: 'Registered'
+      status: "Registered"
     };
 
     this.registrationService.deleteRegistration(registration._id.toString()).pipe(
