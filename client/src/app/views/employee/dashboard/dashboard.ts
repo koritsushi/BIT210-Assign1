@@ -112,6 +112,7 @@ export class Dashboard implements OnInit {
       user_id: userId,
       activity_id: activity._id!,
       registered_at: new Date(),
+      checkin_at: new Date(),
       updated_at: new Date(),
       status: 'Registered'
     };
@@ -184,6 +185,7 @@ export class Dashboard implements OnInit {
       user_id: userId,
       activity_id: activity._id!,
       registered_at: new Date(),
+      checkin_at: new Date(),
       updated_at: new Date(),
       status: 'Registered'
     };

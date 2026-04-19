@@ -79,24 +79,9 @@ export async function SchemaValidation(db: mongodb.Db) {
             user_id: { bsonType: "objectId" },
             activity_id: { bsonType: "objectId" },
             registered_at: { bsonType: "date" },
+            checkedin_at: { bsonType: "date" },
             updated_at: { bsonType: "date" },
             status: { bsonType: "bool" },
-        },
-        },
-    };
-
-    const checkinSchema = {
-        $jsonSchema: {
-        bsonType: "object",
-        required: ["registration_id", "user_id", "activity_id", "checkin_time", "status"],
-        additionalProperties: false,
-        properties: {
-            _id: { bsonType: "objectId" },
-            registration_id: { bsonType: "objectId" },
-            user_id: { bsonType: "objectId" },
-            activity_id: { bsonType: "objectId" },
-            checkin_time: { bsonType: "date" },
-            status: { enum: ["Absent", "Attended"] },
         },
         },
     };
@@ -126,8 +111,7 @@ export async function SchemaValidation(db: mongodb.Db) {
     const collections = [
         { name: "users", schema: userSchema },
         { name: "ngos", schema: ngoSchema },
-        { name: "activity", schema: activitySchema },
-        { name: "checkins", schema: checkinSchema },
+        { name: "activitiy", schema: activitySchema },
         { name: "registration", schema: registrationSchema },
         { name: "notification", schema: notificationSchema}
     ];
