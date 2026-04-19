@@ -22,7 +22,7 @@
       <tbody>
         @for (a of activities(); track trackActivity($index, a)) {
           <tr>
-            <td>{{ getDisplayId($index) }}</td>
+            <td>{{ getDisplayId(a) }}</td>
             <td>
               <div class="activity-title">{{ a.name }}</div>
               <div class="activity-desc">{{ getDescription(a) }}</div>

@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Activity } from '../../../models/activity.model';
@@ -163,8 +164,9 @@ export class Dashboard implements OnInit {
         this.closeForm();
         this.loadData();
       },
-      error: () => {
-        alert(this.isEditing ? 'Failed to update activity.' : 'Failed to create activity.');
+      error: (error) => {
+        const fallback = this.isEditing ? 'Failed to update activity.' : 'Failed to create activity.';
+        alert(this.getRequestErrorMessage(error, fallback));
       },
     });
   }
@@ -203,8 +205,8 @@ export class Dashboard implements OnInit {
     });
   }
 
-  getDisplayId(index: number): string {
-    return `NGO-${index + 1}`;
+  getDisplayId(activity: Activity): string {
+    return this.getActivityId(activity) || '-';
   }
 
   getNgoName(activity: Activity): string {
@@ -284,6 +286,21 @@ export class Dashboard implements OnInit {
 
   private toText(value: unknown): string {
     return String(value ?? '').trim();
+  }
+
+  private getRequestErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof HttpErrorResponse) {
+      const serverMessage =
+        typeof error.error === 'string'
+          ? error.error.trim()
+          : typeof error.error?.message === 'string'
+            ? error.error.message.trim()
+            : '';
+
+      return serverMessage || fallback;
+    }
+
+    return fallback;
   }
 }
 
