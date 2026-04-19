@@ -5,5 +5,5 @@ export interface Registration {
     registered_at: Date | string;
     checkin_at: Date | null;
     updated_at: Date | string;
-    status: boolean;
+    status: "Registered" | "Cancelled" | "Attended";
 }

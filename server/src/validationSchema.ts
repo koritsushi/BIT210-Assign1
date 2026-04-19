@@ -81,7 +81,7 @@ export async function SchemaValidation(db: mongodb.Db) {
             registered_at: { bsonType: "date" },
             checkedin_at: { bsonType: "date" },
             updated_at: { bsonType: "date" },
-            status: { bsonType: "bool" },
+            status: { enum: ["Registered", "Cancelled", "Attended"] },
         },
         },
     };
