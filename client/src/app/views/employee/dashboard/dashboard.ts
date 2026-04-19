@@ -92,7 +92,7 @@ export class Dashboard implements OnInit {
 
   // --- Helper: remaining slots ---
   getRemainingSlots(activity: Activity): number {
-    return activity.max_slots - activity.slots_taken;
+    return Math.max(0, activity.max_slots - activity.slots_taken);
   }
 
   // --- Helper: check if cutoff has passed ---
