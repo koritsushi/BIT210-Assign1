@@ -63,19 +63,6 @@
 
 <div class="form-row" *ngIf="isBroadcastMode">
   <div class="form-group">
-    <label for="broadcastAudience">Audience</label>
-    <select
-      id="broadcastAudience"
-      [(ngModel)]="audience"
-      (ngModelChange)="emitFormChange()"
-    >
-      <option value="All">All</option>
-      <option value="Employees">Employees</option>
-      <option value="NGOs">NGOs</option>
-    </select>
-  </div>
-
-  <div class="form-group">
     <label for="broadcastType">Notification Type</label>
     <input
       id="broadcastType"
@@ -176,12 +163,12 @@
 
     <div class="form-row">
       <div class="form-group">
-        <label for="repeatIntervelMinutes">Repeat Interval (Minutes)</label>
+        <label for="repeatIntervalMinutes">Repeat Interval (Minutes)</label>
         <input
-          id="repeatIntervelMinutes"
+          id="repeatIntervalMinutes"
           type="number"
           min="1"
-          [(ngModel)]="repeatIntervelMinutes"
+          [(ngModel)]="repeatIntervalMinutes"
           (ngModelChange)="emitFormChange()"
           placeholder="Example: 60"
         />

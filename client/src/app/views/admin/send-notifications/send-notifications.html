@@ -48,13 +48,12 @@
       </div>
 
       <app-notification-form
-        [title]="title"
         [type]="type"
-        [audience]="audience"
         [selectedActivityId]="selectedActivityId"
+        [title]="title"
         [message]="message"
         [scheduledAt]="scheduledAt"
-        [repeatIntervelMinutes]="repeatIntervelMinutes"
+        [repeatIntervalMinutes]="repeatIntervalMinutes"
         [repeatUntil]="repeatUntil"
         [enableScheduleTime]="enableScheduleTime"
         [enableIntervalTime]="enableIntervalTime"
@@ -115,7 +114,7 @@
         <div class="meta-grid">
           <p><strong>Type:</strong> {{ item.type }}</p>
           <p><strong>Audience:</strong> {{ $any(item).audience || (item.is_broadcast ? 'All' : 'Employees') }}</p>
-          <p><strong>Activity:</strong> {{ getActivityNameById(item.activity_id) }}</p>
+          <p><strong>Activity:</strong> {{ getActivityNameById(item.activity_id)}}</p>
           <p><strong>Scheduled At:</strong> {{ formatDateValue(item.scheduled_at) }}</p>
           <p><strong>Sent At:</strong> {{ formatDateValue(item.sent_at) }}</p>
           <p><strong>Interval:</strong> {{ getIntervalSummary(item) }}</p>
