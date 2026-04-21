@@ -337,11 +337,17 @@ export class SendNotifications implements OnInit, OnDestroy {
     this.enableIntervalTime = false;
   }
  
-  // --- Display helpers ---
-  getActivityNameById(activityId: string | null): string {
-    if (!activityId) return 'Not selected';
-    return this.activities().find(a => a._id?.toString() === activityId)?.name ?? 'Unknown Activity';
-  }
+getActivityNameById(activityId: string | null): string {
+  if (!activityId) return 'Not selected';
+
+  const activity = this.activities().find((a: any) => {
+    return String(a._id) === String(activityId);
+  });
+
+  if (!activity) return 'Unknown Activity';
+
+  return activity.name || `Activity ${activity.qr_code}`;
+}
  
   getStatusFromDates(
     scheduledAt: Date | string | undefined | null,
@@ -363,11 +369,24 @@ export class SendNotifications implements OnInit, OnDestroy {
     return map[type ?? ''] ?? 'Notification';
   }
  
-  formatDateValue(value: Date | string | undefined | null): string {
-    if (!value) return '-';
-    const date = new Date(value);
-    return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
-  }
+formatDateValue(value: Date | string | undefined | null): string {
+  if (!value) return '-';
+
+  const date = new Date(value);
+
+  if (isNaN(date.getTime())) return String(value);
+
+  return date.toLocaleString('en-MY', {
+    timeZone: 'Asia/Kuala_Lumpur',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+}
  
   getIntervalSummary(item: Notification): string {
     if (item.is_broadcast) return 'Not used for broadcast';

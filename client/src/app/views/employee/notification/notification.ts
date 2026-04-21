@@ -30,30 +30,28 @@ export class NotificationComponent implements OnInit {
         this.activityService.getActivities();
     }
 
-    // --- Get user's visible notifications ---
-    // Includes: targeted to user + broadcasts
-    // Excludes: soft deleted by user
-    getUserNotifications(): Notification[] {
-        const userId = this.authService.getUserId();
-        if (!userId) return [];
+getUserNotifications(): Notification[] {
+    const userId = this.authService.getUserId();
 
-        return this.notifications()
-            .filter(n =>
-                // not soft deleted by this user
-                !n.deleted_by?.includes(userId) &&
-                // targeted to this user OR broadcast to all
-                (n.is_broadcast === true || n.user_id?.toString() === userId.toString()) &&
-                 // only show if sent_at is set OR scheduled_at has passed
-                n.sent_at !== null
-            )
-    }
+    if (!userId) return [];
 
-    // --- Get activity name by activity_id ---
-    getActivityName(activityId: string | null): string {
-        if (!activityId) return 'General';
-        const activity = this.activities().find(a => a._id?.toString() === activityId?.toString());
-        return activity?.name || 'Unknown Activity';
-    }
+    return this.notifications().filter(n =>
+        !n.deleted_by?.includes(userId) &&
+        n.sent_at !== null
+    );
+}
+
+getActivityName(activityId: string | null): string {
+  if (!activityId) return 'General';
+
+  const activity = this.activities().find((a: any) => {
+    return String(a._id) === String(activityId);
+  });
+
+  if (!activity) return 'Unknown Activity';
+
+  return activity.name || `Activity ${activity.qr_code}`;
+}
 
     // --- Soft delete all visible notifications for the user ---
     clearNotifications() {
