@@ -4,7 +4,6 @@ import { collections } from "./database";
 
 // ─────────────────────────────────────────────
 // Helper: check if a notification was already sent
-// to avoid duplicate reminders on each cron tick
 // ─────────────────────────────────────────────
 async function alreadySent(
     activityId: string,
@@ -28,6 +27,7 @@ async function createNotification(data: {
     user_id: string;
     activity_id: string;
     type: string;
+    title: string;
     message: string;
     reminder_label: string;
 }) {
@@ -35,6 +35,7 @@ async function createNotification(data: {
         user_id: data.user_id,
         activity_id: data.activity_id,
         type: data.type,
+        title: data.title,
         message: data.message,
         reminder_label: data.reminder_label,
         is_broadcast: false,
@@ -103,6 +104,7 @@ export function startNotificationScheduler() {
                                 user_id: userId,
                                 activity_id: activityId,
                                 type: "Reminder",
+                                title: "7-Day Reminder",  //   Added
                                 message: `Reminder: "${activityName}" is coming up in 7 days. Don't forget to prepare!`,
                                 reminder_label: label,
                             });
@@ -117,6 +119,7 @@ export function startNotificationScheduler() {
                                 user_id: userId,
                                 activity_id: activityId,
                                 type: "Reminder",
+                                title: "3-Day Reminder",  //   Added
                                 message: `Reminder: "${activityName}" is in 3 days. Make sure you are ready!`,
                                 reminder_label: label,
                             });
@@ -131,6 +134,7 @@ export function startNotificationScheduler() {
                                 user_id: userId,
                                 activity_id: activityId,
                                 type: "Reminder",
+                                title: "Tomorrow Reminder",  //   Added
                                 message: `Reminder: "${activityName}" is TOMORROW. Don't forget to bring your QR code!`,
                                 reminder_label: label,
                             });
@@ -139,12 +143,10 @@ export function startNotificationScheduler() {
                 }
 
                 // ── Urgent: last slots warning ──
-                // triggers when only 20% or fewer slots remain
                 const remaining = activity.max_slots - activity.slots_taken;
                 const threshold = Math.ceil(activity.max_slots * 0.2);
 
                 if (remaining > 0 && remaining <= threshold) {
-                    // broadcast to all users who haven't registered
                     const registeredUserIds = registrations.map((r: { user_id: { toString: () => any; }; }) => r.user_id?.toString());
 
                     const allUsers = await collections.users?.find({
@@ -161,6 +163,7 @@ export function startNotificationScheduler() {
                                 user_id: userId,
                                 activity_id: activityId,
                                 type: "Update",
+                                title: "Limited Slots Available",  //   Added
                                 message: `⚠ Only ${remaining} slot(s) left for "${activityName}"! Register now before it's full.`,
                                 reminder_label: label,
                             });
@@ -175,22 +178,40 @@ export function startNotificationScheduler() {
 
     // ── Scheduled notifications: run every minute ──
     // sends notifications where scheduled_at <= now and sent_at is null
-    cron.schedule("* * * * *", async () => {
+    cron.schedule("*/5 * * * * *", async () => {
+        console.log(`[TEST] Running at ${new Date().toISOString()}`);
         try {
             const now = new Date();
+            
+            //   IMPROVED: Better logging and error handling
             const pending = await collections.notifications?.find({
-                scheduled_at: { $lte: now },
                 sent_at: null,
+                scheduled_at: { $lte: now },
             }).toArray();
 
+            console.log(`[Scheduler] Checking scheduled notifications at ${now.toISOString()}`);
+            console.log(`[Scheduler] Found ${pending?.length ?? 0} pending notifications`);
+
             for (const notification of pending ?? []) {
-                await collections.notifications?.updateOne(
-                    { _id: notification._id },
-                    { $set: { sent_at: now } }
-                );
+                console.log(`[Scheduler] Sending notification ID: ${notification._id}`);
+                
+                try {
+                    const result = await collections.notifications?.updateOne(
+                        { _id: notification._id },
+                        { $set: { sent_at: now } }
+                    );
+                    
+                    console.log(`[Scheduler] Sent notification ${notification._id}`, result);
+                } catch (updateError) {
+                    console.error(`[Scheduler] Failed to send notification ${notification._id}:`, updateError);
+                }
             }
         } catch (error) {
             console.error("[Scheduler] Scheduled notification error:", error);
         }
     });
+    
+    console.log(" Cron jobs registered:");
+    console.log("   - Activity reminders: every hour (0 * * * *)");
+    console.log("   - Scheduled broadcasts: every minute (* * * * *)");
 }

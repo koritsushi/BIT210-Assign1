@@ -9,13 +9,14 @@ export interface Notification {
         | "Reminder"                // scheduled reminder (1 week, 3 days, 1 day before)
         | "Update"                  // activity details changed
         | "Broadcast";              // admin broadcast message to all
+    title: string;
     message: string;
     is_broadcast: boolean;          // true = sent to all employees
     is_read_by: string[];           // array of user_ids who read it
     deleted_by: string[];           // array of user_ids who soft deleted it
-    sent_at: Date;
+    sent_at: Date | null;
     scheduled_at: Date | null;
     repeat_interval_minutes: number | null,
     repeat_until: Date | null;
-    reminder_laber: string | null;
+    reminder_label: string | null;
 }

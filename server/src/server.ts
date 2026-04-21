@@ -48,8 +48,6 @@ const authLimiter = rateLimit({
     message: { message: 'Too many login attempts, please try again later.' }
 });
 
-//public routes
-app.use("/auth", authRouter);
 //route middleware (NOT READY)
 //app.use(authMiddleware);
 
@@ -59,6 +57,7 @@ app.use('/auth/login', authLimiter);
 app.use('/auth/register', authLimiter);
 
 //api routes
+app.use("/auth", authRouter);
 app.use("/users", userRouter);
 app.use("/activity", activityRouter);
 app.use("/checkin", checkinRouter);
@@ -66,11 +65,11 @@ app.use("/registration", registrationRouter);
 app.use("/ngo", ngoRouter);
 app.use("/notification", notificationRouter);
 
-connectDB(ATLAS_URI).then(() => { 
+connectDB(ATLAS_URI).then(() => {
+    startNotificationScheduler(); 
     app.listen(3000, () => {
         console.log(`Server running at http://localhost:3000...`);
     });
-    startNotificationScheduler();
 }).catch((error) => console.error(error));
 
 // hardcode database

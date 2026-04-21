@@ -42,13 +42,14 @@ export class NotificationComponent implements OnInit {
                 // not soft deleted by this user
                 !n.deleted_by?.includes(userId) &&
                 // targeted to this user OR broadcast to all
-                (n.is_broadcast === true || n.user_id?.toString() === userId.toString())
+                (n.is_broadcast === true || n.user_id?.toString() === userId.toString()) &&
+                 // only show if sent_at is set OR scheduled_at has passed
+                n.sent_at !== null
             )
-            .sort((a, b) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime());
     }
 
     // --- Get activity name by activity_id ---
-    getActivityName(activityId: string | undefined): string {
+    getActivityName(activityId: string | null): string {
         if (!activityId) return 'General';
         const activity = this.activities().find(a => a._id?.toString() === activityId?.toString());
         return activity?.name || 'Unknown Activity';
