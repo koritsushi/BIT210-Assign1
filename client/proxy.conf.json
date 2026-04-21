@@ -19,6 +19,11 @@
         "secure": false,
         "changeOrigin": true
     },
+    "/checkin": {
+        "target": "http://localhost:3000",
+        "secure": false,
+        "changeOrigin": true
+    },
     "/registration": {
         "target": "http://localhost:3000",
         "secure": false,
