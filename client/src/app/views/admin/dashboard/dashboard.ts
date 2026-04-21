@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Activity } from '../../../models/activity.model';
 import { Ngo } from '../../../models/ngo.model';
 import { ActivityService } from '../../../services/activity.service';
@@ -43,6 +44,7 @@ export class Dashboard implements OnInit {
   private ngoService = inject(NgoService);
   private registrationService = inject(RegistrationService);
   private fb = inject(FormBuilder);
+  private router = inject(Router);
 
   activities = this.activityService.activities$;
   ngos = this.ngoService.ngos$;
@@ -95,6 +97,10 @@ export class Dashboard implements OnInit {
 
   closeForm(): void {
     this.showForm = false;
+  }
+
+  goToNgoManagement(): void {
+    this.router.navigate(['/admin/ngos']);
   }
 
   onFormValueChange(value: ActivityFormValue): void {
@@ -319,7 +325,6 @@ function buildActivityPayload(raw: ActivityFormValue, context: ActivityFormConte
     location: raw.location,
     description: raw.description || '',
     ngo_name: raw.ngoName || '',
-    participant_user_ids: [],
   };
 
   if (context.isEditing && context.editingId) {

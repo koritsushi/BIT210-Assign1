@@ -36,7 +36,7 @@ export async function SchemaValidation(db: mongodb.Db) {
     const ngoSchema = {
         $jsonSchema: {
         bsonType: "object",
-        required: ["name", "description", "location", "service_type", "is_active"],
+        required: ["name", "location", "service_type", "is_active"],
         additionalProperties: false,
         properties: {
             _id: { bsonType: "objectId" },

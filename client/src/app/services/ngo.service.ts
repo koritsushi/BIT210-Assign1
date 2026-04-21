@@ -31,14 +31,19 @@ export class NgoService {
     }
 
     createNgo(ngo: Ngo) {
-        return this.httpClient.post(`/ngo`, ngo, { responseType: 'text' });
+        return this.httpClient.post(`/ngo`, this.toRequestBody(ngo), { responseType: 'text' });
     }
 
     updateNgo(id: string, ngo: Ngo) {
-        return this.httpClient.put(`/ngo/${id}`, ngo, { responseType: 'text' });
+        return this.httpClient.put(`/ngo/${id}`, this.toRequestBody(ngo), { responseType: 'text' });
     }
 
     deleteNgo(id: string) {
         return this.httpClient.delete(`/ngo/${id}`, { responseType: 'text' });
+    }
+
+    private toRequestBody(ngo: Ngo): Omit<Ngo, '_id'> {
+        const { _id, ...payload } = ngo;
+        return payload;
     }
 }

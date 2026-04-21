@@ -1,0 +1,104 @@
+<section class="card dashboard-card" *ngIf="!showForm">
+  <div class="toolbar">
+    <h2>Manage NGOs</h2>
+    <button class="btn primary" type="button" [disabled]="isSubmitting" (click)="openCreateForm()">
+      {{ isSubmitting ? 'Creating NGO...' : 'Add New NGO' }}
+    </button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Location</th>
+          <th>Service Type</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (ngo of ngos(); track trackNgo($index, ngo)) {
+          <tr>
+            <td>{{ getNgoId(ngo) }}</td>
+            <td class="ngo-name">{{ ngo.name }}</td>
+            <td class="ngo-desc">{{ ngo.description }}</td>
+            <td>{{ ngo.location }}</td>
+            <td>{{ ngo.service_type }}</td>
+            <td>
+              <span
+                class="badge"
+                [class.badge-inactive]="!ngo.is_active">
+                {{ getStatusLabel(ngo) }}
+              </span>
+            </td>
+            <td class="actions">
+              <button class="btn small" type="button" (click)="edit(ngo)">Edit</button>
+              <button
+                class="btn small danger"
+                type="button"
+                [disabled]="isNgoInUse(ngo)"
+                [title]="getDeleteHint(ngo)"
+                (click)="remove(ngo)">
+                Delete
+              </button>
+              @if (isNgoInUse(ngo)) {
+                <span class="action-hint">Used by an activity</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+@if (showForm) {
+  <section class="card form-card full-page-form">
+    <div class="form-page-header">
+      <h2>{{ isEditing ? 'Edit NGO' : 'Add New NGO' }}</h2>
+    </div>
+
+    <form class="ngo-form" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="field-grid">
+        <label class="field">
+          <span>Name</span>
+          <input type="text" formControlName="name" />
+        </label>
+
+        <label class="field">
+          <span>Location</span>
+          <input type="text" formControlName="location" />
+        </label>
+
+        <label class="field">
+          <span>Service Type</span>
+          <input type="text" formControlName="serviceType" />
+        </label>
+
+        <label class="field">
+          <span>Status</span>
+          <select formControlName="status">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </label>
+
+        <label class="field field-wide">
+          <span>Description</span>
+          <textarea rows="6" formControlName="description"></textarea>
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn primary" type="submit" [disabled]="form.invalid || isSubmitting">
+          {{ isSubmitting ? (isEditing ? 'Saving NGO...' : 'Creating NGO...') : (isEditing ? 'Save NGO' : 'Create NGO') }}
+        </button>
+        <button class="btn" type="button" (click)="openCreateForm()">Clear</button>
+        <button class="btn danger" type="button" (click)="closeForm()">Close</button>
+      </div>
+    </form>
+  </section>
+}

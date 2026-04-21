@@ -14,5 +14,4 @@ export interface Activity {
     location?: string;
     description?: string;
     ngo_name?: string;
-    participant_user_ids?: string[];
 }

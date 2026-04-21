@@ -1,6 +1,7 @@
 import { User } from "./src/modal/user";
 import { Ngo } from "./src/modal/ngo";
 import { Activity } from "./src/modal/activity";
+import { Checkin } from "./src/modal/checkin";
 import { Registration } from "./src/modal/registration";
 import { Notification } from "./src/modal/notification";
 import { ObjectId } from "mongodb";
@@ -61,6 +62,8 @@ export const mockActivities: Activity[] = [
 export const mockRegistrations: Registration[] = [  
   { _id: registered1, user_id: userId1, activity_id: activityId1, registered_at: new Date("2026-03-01T10:00:00"), checkedin_at: null, updated_at: new Date("2026-03-01T10:00:00"), status: "Registered" },
 ];
+
+export const mockCheckins: Checkin[] = [];
 
 export const mockNotifications: Notification[] = [
     // --- Registration confirmation ---

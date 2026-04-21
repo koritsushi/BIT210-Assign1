@@ -28,6 +28,7 @@ export const routes: Routes = [
         component: Admin,
         children: [
             { path: 'dashboard', loadComponent: () => import('./views/admin/dashboard/dashboard').then((admin) => admin.Dashboard) },
+            { path: 'ngos', loadComponent: () => import('./views/admin/ngo-management/ngo-management').then((admin) => admin.NgoManagement) },
             { path: 'activity-check-in', loadComponent: () => import('./views/admin/activity-check-in/activity-check-in').then((admin) => admin.ActivityCheckIn) },
             { path: 'send-notifications', loadComponent: () => import('./views/admin/send-notifications/send-notifications').then((admin) => admin.SendNotifications) },
             { path: 'settings', loadComponent: () => import('./views/settings/settings').then(m => m.Settings) },
