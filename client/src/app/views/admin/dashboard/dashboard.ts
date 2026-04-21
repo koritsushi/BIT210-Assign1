@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { Activity } from '../../../models/activity.model';
 import { Ngo } from '../../../models/ngo.model';
 import { ActivityService } from '../../../services/activity.service';
@@ -28,14 +28,13 @@ export interface ActivityFormContext {
   editingId: string | null;
   editingNgoId: string;
   editingQrCode: string;
-  editingStatus: Activity['status'];
   editingTaken: number;
   isEditing: boolean;
 }
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, ReactiveFormsModule, ActivityFormComponent],
+  imports: [CommonModule, ActivityFormComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -53,8 +52,6 @@ export class Dashboard implements OnInit {
   isEditing = false;
 
   editingId: string | null = null;
-  editingTaken = 0;
-  editingStatus: Activity['status'] = 'Open';
   editingNgoId = DEFAULT_NGO_ID;
   editingQrCode = '';
 
@@ -79,8 +76,6 @@ export class Dashboard implements OnInit {
     this.showForm = true;
     this.isEditing = false;
     this.editingId = null;
-    this.editingTaken = 0;
-    this.editingStatus = 'Open';
     this.editingNgoId = DEFAULT_NGO_ID;
     this.editingQrCode = '';
 
@@ -147,7 +142,6 @@ export class Dashboard implements OnInit {
       editingId: this.editingId,
       editingNgoId: this.editingNgoId,
       editingQrCode: this.editingQrCode,
-      editingStatus: this.editingStatus,
       editingTaken: currentTaken,
       isEditing: this.isEditing,
     };
@@ -175,8 +169,6 @@ export class Dashboard implements OnInit {
     this.showForm = true;
     this.isEditing = true;
     this.editingId = this.getActivityId(activity);
-    this.editingTaken = this.getTaken(activity);
-    this.editingStatus = this.getStatus(activity);
     this.editingNgoId = this.toText(activity.ngo_id) || DEFAULT_NGO_ID;
     this.editingQrCode = activity.qr_code ?? '';
 

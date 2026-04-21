@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { ActivityMeta } from '../../../models/checkin.model';
 import { Activity } from '../../../models/activity.model';
@@ -31,7 +30,7 @@ export interface ActivityOption {
 
 @Component({
   selector: 'app-activity-check-in',
-  imports: [CommonModule, FormsModule, QRCodeComponent],
+  imports: [CommonModule, QRCodeComponent],
   templateUrl: './activity-check-in.html',
   styleUrl: './activity-check-in.css',
 })

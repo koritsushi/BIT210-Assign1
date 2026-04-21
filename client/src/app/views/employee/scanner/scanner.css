@@ -1,0 +1,50 @@
+.scanner-page {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.camera-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  min-height: 360px;
+  background:
+    radial-gradient(circle at top, rgba(59, 130, 246, 0.28), transparent 45%),
+    linear-gradient(145deg, #0f172a, #1e293b 55%, #111827);
+}
+
+.camera-frame video {
+  display: block;
+  width: 100%;
+  min-height: 360px;
+  object-fit: cover;
+}
+
+.camera-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.scan-window {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: clamp(170px, 28vw, 200px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  border-radius: 14px;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.25);
+}
+
+@media (max-width: 900px) {
+  .camera-frame,
+  .camera-frame video {
+    min-height: 300px;
+  }
+}

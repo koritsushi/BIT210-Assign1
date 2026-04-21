@@ -21,11 +21,6 @@ export class ActivityFormComponent {
     this.formValueChange.emit(this.formGroup.getRawValue());
   }
 
-  selectNgo(name: string): void {
-    this.formGroup.get('ngoName')?.setValue(name);
-    this.emitFormValueChange();
-  }
-
   submit(): void {
     this.emitFormValueChange();
     this.formAction.emit('submit');

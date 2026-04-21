@@ -42,6 +42,7 @@ export const routes: Routes = [
          children: [
             { path: 'dashboard', loadComponent: () => import('./views/employee/dashboard/dashboard').then((employee) => employee.Dashboard)},
             { path: 'notification', loadComponent: () => import('./views/employee/notification/notification').then((employee) => employee.NotificationComponent)},
+            { path: 'scanner', loadComponent: () => import('./views/employee/scanner/scanner').then((employee) => employee.Scanner)},
             { path: 'settings', loadComponent: () => import('./views/settings/settings').then(m => m.Settings) },
             { path: '', redirectTo: 'dashboard', pathMatch: 'full'}
         ]
