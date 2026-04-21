@@ -2,8 +2,8 @@ export interface Registration {
     _id?: string;
     user_id: string;
     activity_id: string;
-    registered_at: Date | string;
+    registered_at: Date;
     checkedin_at: Date | null;
-    updated_at: Date | string;
+    updated_at: Date;
     status: "Registered" | "Cancelled" | "Attended";
 }
