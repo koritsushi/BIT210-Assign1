@@ -48,9 +48,6 @@ const authLimiter = rateLimit({
     message: { message: 'Too many login attempts, please try again later.' }
 });
 
-//route middleware (NOT READY)
-app.use(authMiddleware);
-
 //api limit
 app.use(generalLimiter);
 app.use('/auth/login', authLimiter);
@@ -58,6 +55,7 @@ app.use('/auth/register', authLimiter);
 
 //api routes
 app.use("/auth", authRouter);
+app.use(authMiddleware);
 app.use("/users", userRouter);
 app.use("/activity", activityRouter);
 app.use("/checkin", checkinRouter);

@@ -62,26 +62,35 @@
       </table>
     </section>
 
-    <aside class="card qr-card">
-      <h3>QR Code</h3>
-      <div class="qr-box">
-        @if (hasGeneratedQr) {
-          <qrcode
-            [qrdata]="generatedQrText"
-            [width]="164"
-            [margin]="1"
-            [errorCorrectionLevel]="'M'"
-            [elementType]="'canvas'"
-            ariaLabel="Generated Activity QR Code"
-            title="Generated Activity QR Code"
-          ></qrcode>
-        } @else {
-          <span>QR</span>
+    <aside class="card scanner-card">
+      <h3>Scanner</h3>
+      <p class="scanner-activity">
+        <strong>Selected Activity:</strong>
+        <span>{{ currentActivitySelection || 'No activity selected' }}</span>
+      </p>
+
+      <div class="camera-frame">
+        <video #video autoplay muted playsinline></video>
+        <div class="scan-window" aria-hidden="true"></div>
+
+        @if (cameraErrorMessage) {
+          <div class="camera-overlay">
+            <span>{{ cameraErrorMessage }}</span>
+          </div>
         }
       </div>
-      <button class="btn primary qr-generate-btn" type="button" (click)="generateQrCode()">
-        Generate QR Code
-      </button>
+
+      <p
+        class="scanner-status"
+        [class.scanner-status-success]="scannerMessageKind === 'success'"
+        [class.scanner-status-error]="scannerMessageKind === 'error'"
+      >
+        {{ scannerMessage }}
+      </p>
+
+      <p class="scanner-hint">
+        Scan the employee QR code from their email to record attendance for the selected activity.
+      </p>
     </aside>
   </div>
 
@@ -102,7 +111,6 @@
         <div>Absent: <strong class="bad">{{ absentCount }}</strong></div>
         <div>Attendance Rate: <strong>{{ attendanceRate }}%</strong></div>
       </div>
-
     </section>
   }
 </section>
