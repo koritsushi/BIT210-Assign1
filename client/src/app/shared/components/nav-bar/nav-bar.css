@@ -2,10 +2,10 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: flex-end;
-  padding: 8px 24px 0 24px;  /* add top padding for rounded tabs */
+  padding: 8px 24px 0 24px;
   background-color: #4a5ab5;
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px 10px 10px 10px;
+  border-radius: 10px;
 }
 
 .nav-group {
@@ -26,41 +26,23 @@
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
-  border-radius: 8px 8px 0 0;      /* rounded top corners only */
+  border-radius: 8px 8px 0 0;
   border-bottom: 3px solid transparent;
   transition: all 0.2s ease;
 }
 
 .nav-item:hover {
   color: white;
-  background-color: rgba(255, 255, 255, 0.15);  /* highlight on hover */
+  background-color: rgba(255, 255, 255, 0.15);
   border-radius: 8px 8px 0 0;
 }
 
 .nav-item.active {
-  color: #4a5ab5;                    /* text matches nav color */
-  background-color: #f0f2f5;         /* matches page background */
-  border-radius: 15px 15px 15px 15px;
-  border-bottom: 3px solid #f0f2f5;  /* hides bottom border gap */
+  color: #4a5ab5;
+  background-color: #f0f2f5;
+  border-radius: 15px;
+  border-bottom: 3px solid #f0f2f5;
   font-weight: 600;
-}
-
-.nav-item-scan {
-  grid-column: 3;
-  justify-self: end;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.nav-item-scan:hover {
-  border-radius: 999px;
-}
-
-.nav-item-scan.active {
-  color: #1e3a8a;
-  background: #ffffff;
-  border-bottom-color: #ffffff;
 }
 
 @media (max-width: 720px) {
@@ -75,10 +57,5 @@
   .nav-group-admin {
     flex-wrap: wrap;
     justify-content: center;
-  }
-
-  .nav-item-scan {
-    margin-left: 0;
-    align-self: flex-end;
   }
 }

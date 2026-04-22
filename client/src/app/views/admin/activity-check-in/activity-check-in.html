@@ -62,26 +62,28 @@
       </table>
     </section>
 
-    <aside class="card qr-card">
-      <h3>QR Code</h3>
-      <div class="qr-box">
-        @if (hasGeneratedQr) {
-          <qrcode
-            [qrdata]="generatedQrText"
-            [width]="164"
-            [margin]="1"
-            [errorCorrectionLevel]="'M'"
-            [elementType]="'canvas'"
-            ariaLabel="Generated Activity QR Code"
-            title="Generated Activity QR Code"
-          ></qrcode>
-        } @else {
-          <span>QR</span>
-        }
+    <aside class="card scanner-card">
+      <h3>Scanner</h3>
+
+      <div class="scanner-shell" [class.camera-error]="!!cameraErrorMessage">
+        <video #video playsinline muted></video>
+        <div class="scanner-overlay" aria-hidden="true"></div>
       </div>
-      <button class="btn primary qr-generate-btn" type="button" (click)="generateQrCode()">
-        Generate QR Code
-      </button>
+
+      @if (scannerMessage) {
+        <p
+          class="scanner-status"
+          [class.info]="scannerMessageKind === 'info'"
+          [class.success]="scannerMessageKind === 'success'"
+          [class.error]="scannerMessageKind === 'error'"
+        >
+          {{ scannerMessage }}
+        </p>
+      }
+
+      @if (cameraErrorMessage) {
+        <p class="scanner-status error">{{ cameraErrorMessage }}</p>
+      }
     </aside>
   </div>
 
@@ -102,7 +104,6 @@
         <div>Absent: <strong class="bad">{{ absentCount }}</strong></div>
         <div>Attendance Rate: <strong>{{ attendanceRate }}%</strong></div>
       </div>
-
     </section>
   }
 </section>
