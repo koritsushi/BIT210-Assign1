@@ -45,28 +45,14 @@ checkinRouter.post("/", async (req, res) => {
         const userId = new ObjectId(user_id);
         const activityId = new ObjectId(activity_id);
 
-        const registrations = await collections?.registrations?.find({}).toArray() ?? [];
-        const registration = registrations.find((item: any) =>
-            toText(item?.user_id) === toText(userId)
-            && toText(item?.activity_id) === toText(activityId)
-            && item?.status !== "Cancelled",
-        );
+        const registration = await collections?.registrations?.findOne({
+            user_id: userId,
+            activity_id: activityId,
+            status: { $ne: "Cancelled" },
+        });
 
         if (!registration) {
             return res.status(404).send("No active registration found for this user and activity.");
-        }
-
-        const checkins = await collections?.checkins?.find({}).toArray() ?? [];
-        const existingCheckin = checkins.find((item: any) =>
-            toText(item?.registration_id) === toText(registration._id)
-            || (
-                toText(item?.user_id) === toText(registration.user_id)
-                && toText(item?.activity_id) === toText(registration.activity_id)
-            ),
-        );
-
-        if (existingCheckin) {
-            return res.status(200).send("Check-in already recorded.");
         }
 
         const registrationId = toObjectId(registration._id);
@@ -74,18 +60,53 @@ checkinRouter.post("/", async (req, res) => {
             return res.status(500).send("Registration record has an invalid ID.");
         }
 
-        const now = new Date();
+        const existingCheckin = await collections?.checkins?.findOne({
+            $or: [
+                { registration_id: registrationId },
+                { user_id: userId, activity_id: activityId },
+            ],
+        });
+
+        const attendanceTime =
+            toDate(existingCheckin?.checkin_time)
+            ?? toDate(registration.checkedin_at)
+            ?? new Date();
+
+        if (existingCheckin || registration.status === "Attended") {
+            await collections?.registrations?.updateOne(
+                { _id: registrationId },
+                {
+                    $set: {
+                        status: "Attended",
+                        checkedin_at: attendanceTime,
+                        updated_at: attendanceTime,
+                    },
+                },
+            );
+            return res.status(200).send("Check-in already recorded.");
+        }
+
         const checkin: Checkin = {
             registration_id: registrationId,
             user_id: userId,
             activity_id: activityId,
-            checkin_time: now,
+            checkin_time: attendanceTime,
             status: "Attended",
         };
 
         const result = await collections?.checkins?.insertOne(checkin);
 
         if (result?.acknowledged) {
+            await collections?.registrations?.updateOne(
+                { _id: registrationId },
+                {
+                    $set: {
+                        status: "Attended",
+                        checkedin_at: attendanceTime,
+                        updated_at: attendanceTime,
+                    },
+                },
+            );
             return res.status(201).send(`Created a new check-in record: ID ${result.insertedId}.`);
         }
 
@@ -97,15 +118,20 @@ checkinRouter.post("/", async (req, res) => {
     }
 });
 
-function toText(value: unknown): string {
-    return String(value ?? "").trim();
-}
-
 function toObjectId(value: unknown): ObjectId | null {
     if (value instanceof ObjectId) {
         return value;
     }
 
-    const text = toText(value);
+    const text = String(value ?? "").trim();
     return ObjectId.isValid(text) ? new ObjectId(text) : null;
+}
+
+function toDate(value: unknown): Date | null {
+    if (value === null || value === undefined || value === "") {
+        return null;
+    }
+
+    const date = value instanceof Date ? value : new Date(String(value));
+    return Number.isNaN(date.getTime()) ? null : date;
 }

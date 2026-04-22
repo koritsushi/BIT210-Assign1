@@ -23,8 +23,11 @@ export class AuthService {
             // Save token and user info automatically on successful login
             tap(response => {
                 if (response.token && response.user) {
+                    const userId = String(response.user._id ?? response.user.id ?? '');
                     this.saveToken(response.token);
-                    this.saveUserId(response.user.id);
+                    if (userId) {
+                        this.saveUserId(userId);
+                    }
                     this.saveName(response.user.name);
                     this.saveRole(response.user.role);
                 }
@@ -55,8 +58,11 @@ export class AuthService {
             // Save token after 2FA verification too
             tap(response => {
                 if (response.token && response.user) {
+                    const userId = String(response.user._id ?? response.user.id ?? '');
                     this.saveToken(response.token);
-                    this.saveUserId(response.user.id);
+                    if (userId) {
+                        this.saveUserId(userId);
+                    }
                     this.saveName(response.user.name);
                     this.saveRole(response.user.role);
                     localStorage.removeItem('temp_token');

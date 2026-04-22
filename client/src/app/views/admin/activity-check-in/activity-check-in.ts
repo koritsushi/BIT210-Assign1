@@ -1,18 +1,31 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { QRCodeComponent } from 'angularx-qrcode';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  Inject,
+  OnDestroy,
+  OnInit,
+  PLATFORM_ID,
+  ViewChild,
+  inject,
+} from '@angular/core';
+import QrScanner from 'qr-scanner';
 import { ActivityMeta } from '../../../models/checkin.model';
 import { Activity } from '../../../models/activity.model';
 import { Ngo } from '../../../models/ngo.model';
 import { Registration } from '../../../models/registration.model';
 import { User } from '../../../models/user.model';
 import { ActivityService } from '../../../services/activity.service';
+import { CheckinService } from '../../../services/checkin.service';
 import { NgoService } from '../../../services/ngo.service';
+import { QrEmailService } from '../../../services/qr-email.service';
 import { RegistrationService } from '../../../services/registration.servicce';
 import { UserService } from '../../../services/user.service';
 
 type AdminCheckInStatus = 'Attended' | '-';
+type ScannerMessageKind = 'info' | 'success' | 'error';
 
 interface AdminCheckInRecord {
   id: string;
@@ -24,6 +37,12 @@ interface AdminCheckInRecord {
   activityId: string;
 }
 
+interface EmployeeQrPayload {
+  userId?: string;
+  email?: string;
+  activityId?: string;
+}
+
 export interface ActivityOption {
   id: string;
   label: string;
@@ -31,37 +50,57 @@ export interface ActivityOption {
 
 @Component({
   selector: 'app-activity-check-in',
-  imports: [CommonModule, FormsModule, QRCodeComponent],
+  imports: [CommonModule],
   templateUrl: './activity-check-in.html',
   styleUrl: './activity-check-in.css',
 })
-export class ActivityCheckIn implements OnInit, OnDestroy {
+export class ActivityCheckIn implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('video', { static: false }) video?: ElementRef<HTMLVideoElement>;
+
   private activityService = inject(ActivityService);
+  private checkinService = inject(CheckinService);
   private registrationService = inject(RegistrationService);
   private userService = inject(UserService);
   private ngoService = inject(NgoService);
+  private qrEmailService = inject(QrEmailService);
+  private cdr = inject(ChangeDetectorRef);
 
-  // Observables for activities, registrations, users, and NGOs
   activities = this.activityService.activities$;
   registrations = this.registrationService.registrations$;
   users = this.userService.users$;
   ngos = this.ngoService.ngos$;
 
-  // State for selected activity and report visibility
   selectedActivityId = '';
   showReport = false;
-  generatedQrText = '';
+
+  cameraErrorMessage = '';
+  scannerMessage = '';
+  scannerMessageKind: ScannerMessageKind = 'info';
+  emailDispatchMessage = '';
+  emailDispatchMessageKind: ScannerMessageKind = 'info';
+  isSendingQrs = false;
+  private qrScanner?: QrScanner;
   private refreshTimer?: ReturnType<typeof setInterval>;
+  private isSubmitting = false;
+  private lastScannedValue = '';
+
+  constructor(@Inject(PLATFORM_ID) private platformId: object) {}
 
   ngOnInit(): void {
     this.loadData();
     this.startPolling();
   }
 
+  ngAfterViewInit(): void {
+    this.startScanner();
+  }
+
   ngOnDestroy(): void {
     if (this.refreshTimer) {
       clearInterval(this.refreshTimer);
     }
+
+    this.qrScanner?.destroy();
   }
 
   get activityOptions(): ActivityOption[] {
@@ -87,36 +126,14 @@ export class ActivityCheckIn implements OnInit, OnDestroy {
     return this.activityOptions.find((activity) => activity.id === this.currentActivityId)?.label || '';
   }
 
-  get currentActivity(): Activity | undefined {
-    const currentActivityId = this.currentActivityId;
-    return this.activities().find((activity) => getActivityId(activity) === currentActivityId);
-  }
-
   get currentActivityId(): string {
     return resolveSelectedActivityId(this.selectedActivityId, this.activityOptions);
-  }
-
-  get hasGeneratedQr(): boolean {
-    return this.generatedQrText.trim() !== '';
-  }
-
-  generateReport(): void {
-    this.showReport = true;
-  }
-
-  selectActivity(activityId: string): void {
-    if (this.selectedActivityId !== activityId) {
-      this.showReport = false;
-    }
-    this.selectedActivityId = activityId;
-    this.generatedQrText = '';
   }
 
   get reportActivityName(): string {
     return this.currentActivitySelection || 'All Activities';
   }
 
-  // report header getters
   get reportDate(): string {
     return getActivityMeta(this.currentActivityId, this.activities(), this.ngos()).date;
   }
@@ -125,7 +142,6 @@ export class ActivityCheckIn implements OnInit, OnDestroy {
     return getActivityMeta(this.currentActivityId, this.activities(), this.ngos()).location;
   }
 
-  // report content getters
   get totalEmployees(): number {
     return this.filteredRecords.length;
   }
@@ -142,17 +158,87 @@ export class ActivityCheckIn implements OnInit, OnDestroy {
     if (!this.filteredRecords.length) return 0;
     return Math.round((this.attendedCount / this.filteredRecords.length) * 100);
   }
-  generateQrCode(): void {
-    const activity = this.currentActivity;
-    if (!activity) {
-      this.generatedQrText = '';
+
+  get canSendQrCodes(): boolean {
+    if (!this.currentActivityId || this.isSendingQrs) {
+      return false;
+    }
+
+    return getEligibleEmployeesForActivity(
+      this.currentActivityId,
+      this.registrations(),
+      this.users(),
+    ).length > 0;
+  }
+
+  generateReport(): void {
+    this.showReport = true;
+  }
+
+  async sendQrCodes(): Promise<void> {
+    if (!this.currentActivityId) {
+      this.setEmailDispatchMessage('error', 'Please select an activity before sending QR codes.');
       return;
     }
 
-    this.generatedQrText = JSON.stringify(buildQrPayload(activity, this.ngos()));
+    const participants = getEligibleEmployeesForActivity(
+      this.currentActivityId,
+      this.registrations(),
+      this.users(),
+    );
+
+    if (!participants.length) {
+      this.setEmailDispatchMessage('error', 'No active registered employees found for this activity.');
+      return;
+    }
+
+    this.isSendingQrs = true;
+    this.setEmailDispatchMessage('info', 'Sending QR codes to registered employees...');
+    this.cdr.detectChanges();
+
+    const activityLabel = this.currentActivitySelection || 'Selected Activity';
+    const activityDate = this.reportDate;
+    let sent = 0;
+    let skipped = 0;
+
+    for (const employee of participants) {
+      try {
+        await this.qrEmailService.sendEmployeeQr({
+          employee,
+          activityId: this.currentActivityId,
+          activityLabel,
+          activityDate,
+        });
+        sent += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    this.isSendingQrs = false;
+    this.setEmailDispatchMessage(
+      sent
+        ? 'success'
+        : 'error',
+      `QR email dispatch finished. Sent ${sent}${skipped ? `, skipped ${skipped}` : ''}.`,
+    );
+    this.cdr.detectChanges();
   }
 
-  private loadData(): void { // Load check-in list data for the component
+  selectActivity(activityId: string): void {
+    if (this.selectedActivityId !== activityId) {
+      this.showReport = false;
+    }
+
+    this.selectedActivityId = activityId;
+    this.emailDispatchMessage = '';
+    this.setScannerMessage(
+      'info',
+      '',
+    );
+  }
+
+  private loadData(): void {
     this.activityService.getActivities();
     this.userService.getUsers();
     this.ngoService.getNgos();
@@ -168,186 +254,391 @@ export class ActivityCheckIn implements OnInit, OnDestroy {
       this.refreshDynamicData();
     }, 4000);
   }
+
+  private startScanner(): void {
+    if (!isPlatformBrowser(this.platformId) || !this.video?.nativeElement) {
+      return;
+    }
+
+    this.qrScanner = new QrScanner(
+      this.video.nativeElement,
+      (result: unknown) => this.handleScanResult(extractScanText(result)),
+      () => undefined,
+      calculateCenteredSquareScanRegion,
+      'environment',
+    );
+
+    this.qrScanner.start().then(() => {
+      this.cameraErrorMessage = '';
+      this.setScannerMessage(
+        'info',
+        '',
+      );
+      this.cdr.detectChanges();
+    }).catch(() => {
+      this.cameraErrorMessage = 'Unable to start the camera. Please allow camera access and try again.';
+      this.setScannerMessage('error', 'Camera unavailable for scanning.');
+      this.cdr.detectChanges();
+    });
+  }
+
+  private handleScanResult(rawResult: string): void {
+    const scannedText = rawResult.trim();
+    if (!scannedText || this.isSubmitting || scannedText === this.lastScannedValue) {
+      return;
+    }
+
+    this.lastScannedValue = scannedText;
+
+    if (!this.currentActivityId) {
+      this.setScannerMessage('error', 'Please select an activity before scanning.');
+      this.cdr.detectChanges();
+      this.resetScan();
+      return;
+    }
+
+    const employeePayload = parseEmployeeQrPayload(scannedText);
+    const qrActivityId = toText(employeePayload.activityId);
+    if (qrActivityId && qrActivityId !== this.currentActivityId) {
+      this.setScannerMessage('error', 'QR code belongs to a different activity.');
+      this.cdr.detectChanges();
+      this.resetScan();
+      return;
+    }
+
+    const employee = resolveEmployeeFromQr(employeePayload, this.users());
+
+    if (!employee?._id || employee.role !== 'Employee') {
+      this.setScannerMessage('error', 'QR code does not match an employee account.');
+      this.cdr.detectChanges();
+      this.resetScan();
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.setScannerMessage('info', `Recording check-in for ${employee.name}...`);
+    this.cdr.detectChanges();
+
+    this.checkinService.createCheckin(String(employee._id), this.currentActivityId).subscribe({
+      next: (message) => {
+        this.setScannerMessage('success', `${employee.name}: ${message}`);
+        this.refreshDynamicData();
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        const fallback = 'Unable to record check-in.';
+        const serverMessage =
+          typeof error?.error === 'string' && error.error.trim()
+            ? error.error.trim()
+            : fallback;
+
+        this.setScannerMessage('error', `${employee.name}: ${serverMessage}`);
+        this.cdr.detectChanges();
+      },
+      complete: () => {
+        this.resetScan();
+      },
+    });
+  }
+
+  private resetScan(): void {
+    this.isSubmitting = false;
+    setTimeout(() => {
+      this.lastScannedValue = '';
+      this.cdr.detectChanges();
+    }, 1200);
+  }
+
+  private setScannerMessage(kind: ScannerMessageKind, message: string): void {
+    this.scannerMessageKind = kind;
+    this.scannerMessage = message;
+  }
+
+  private setEmailDispatchMessage(kind: ScannerMessageKind, message: string): void {
+    this.emailDispatchMessageKind = kind;
+    this.emailDispatchMessage = message;
+  }
 }
 
-// ---------------------------------------------------------------------------
-// component helpers
-
 export function getActivityOptions(activities: Activity[], ngos: Ngo[]): ActivityOption[] {
-    const baseLabels = activities.map((activity) => buildActivityOptionBaseLabel(activity, ngos));
-    const labelCounts = new Map<string, number>();
+  const baseLabels = activities.map((activity) => buildActivityOptionBaseLabel(activity, ngos));
+  const labelCounts = new Map<string, number>();
 
-    baseLabels.forEach((label) => {
-      labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
-    });
+  baseLabels.forEach((label) => {
+    labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
+  });
 
-    return activities.map((activity, index) => {
-      const id = getActivityId(activity);
-      const baseLabel = baseLabels[index];
-      const label = (labelCounts.get(baseLabel) ?? 0) > 1
-        ? `${baseLabel} [${id.slice(-4) || String(index + 1)}]`
-        : baseLabel;
+  return activities.map((activity, index) => {
+    const id = getActivityId(activity);
+    const baseLabel = baseLabels[index];
+    const label = (labelCounts.get(baseLabel) ?? 0) > 1
+      ? `${baseLabel} [${id.slice(-4) || String(index + 1)}]`
+      : baseLabel;
 
-      return { id, label };
-    });
+    return { id, label };
+  });
 }
 
 export function resolveSelectedActivityId(selectedActivityId: string, options: ActivityOption[]): string {
-    if (selectedActivityId && options.some((option) => option.id === selectedActivityId)) {
-      return selectedActivityId;
-    }
+  if (selectedActivityId && options.some((option) => option.id === selectedActivityId)) {
+    return selectedActivityId;
+  }
 
-    return options[0]?.id || '';
+  return options[0]?.id || '';
 }
 
 export function buildRecords(
-    activities: Activity[],
-    registrations: Registration[],
-    users: User[],
-    ngos: Ngo[],
+  activities: Activity[],
+  registrations: Registration[],
+  users: User[],
+  ngos: Ngo[],
 ): AdminCheckInRecord[] {
-    const activityMap = new Map<string, Activity>();
-    activities.forEach((activity) => activityMap.set(getActivityId(activity), activity));
+  const activityMap = new Map<string, Activity>();
+  activities.forEach((activity) => activityMap.set(getActivityId(activity), activity));
 
-    const userMap = new Map<string, User>();
-    users.forEach((user) => userMap.set(toText(user._id), user));
+  const userMap = new Map<string, User>();
+  users.forEach((user) => userMap.set(toText(user._id), user));
 
-    return registrations
-      .map((registration) => {
-        const activity = activityMap.get(toText(registration.activity_id));
-        const user = userMap.get(toText(registration.user_id));
-        if (!activity || !user) return null;
+  return registrations
+    .map((registration) => {
+      const activity = activityMap.get(toText(registration.activity_id));
+      const user = userMap.get(toText(registration.user_id));
+      if (!activity || !user) return null;
 
-        const recordId = getRecordId(registration);
-        const status = getDisplayStatus(registration.status);
-        const timeSource = status === 'Attended' ? registration.checkedin_at : null;
+      const recordId = getRecordId(registration);
+      const status = getDisplayStatus(registration.status);
+      const timeSource = status === 'Attended' ? registration.checkedin_at : null;
 
-        return {
-          id: recordId,
-          name: user.name,
-          department: toText(user.department) || '-',
-          checkInTime: timeSource ? formatDateTime(timeSource) : '-',
-          status,
-          activityId: getActivityId(activity),
-          activity: getActivityName(activity, ngos),
-        };
-      })
-      .filter((record): record is AdminCheckInRecord => !!record); 
+      return {
+        id: recordId,
+        name: user.name,
+        department: toText(user.department) || '-',
+        checkInTime: timeSource ? formatDateTime(timeSource) : '-',
+        status,
+        activityId: getActivityId(activity),
+        activity: getActivityName(activity, ngos),
+      };
+    })
+    .filter((record): record is AdminCheckInRecord => !!record);
 }
 
-export function getActivityMeta(activityId: string, activities: Activity[], ngos: Ngo[]): ActivityMeta { // for report header, get date and location of the activity
-    const activity = activities.find((item) => getActivityId(item) === activityId);
-    if (!activity) {
-      return { date: 'N/A', location: 'N/A' };
+function getEligibleEmployeesForActivity(
+  activityId: string,
+  registrations: Registration[],
+  users: User[],
+): User[] {
+  const userMap = new Map<string, User>();
+  users.forEach((user) => {
+    if (user.role === 'Employee' && user._id) {
+      userMap.set(toText(user._id), user);
+    }
+  });
+
+  const seenUserIds = new Set<string>();
+  const employees: User[] = [];
+
+  registrations.forEach((registration) => {
+    if (toText(registration.activity_id) !== activityId || registration.status === 'Cancelled') {
+      return;
     }
 
-    return {
-      date: toDateOnly(activity.date),
-      location: getActivityLocation(activity, ngos),
-    };
+    const userId = toText(registration.user_id);
+    if (!userId || seenUserIds.has(userId)) {
+      return;
+    }
+
+    const user = userMap.get(userId);
+    if (user?.email) {
+      seenUserIds.add(userId);
+      employees.push(user);
+    }
+  });
+
+  return employees;
 }
 
-export interface ActivityQrPayload {
-    activityId: string;
-    activityName: string;
+export function getActivityMeta(activityId: string, activities: Activity[], ngos: Ngo[]): ActivityMeta {
+  const activity = activities.find((item) => getActivityId(item) === activityId);
+  if (!activity) {
+    return { date: 'N/A', location: 'N/A' };
+  }
+
+  return {
+    date: toDateOnly(activity.date),
+    location: getActivityLocation(activity, ngos),
+  };
 }
 
-export function buildQrPayload(activity: Activity, ngos: Ngo[]): ActivityQrPayload {
-    return {
-      activityId: getActivityId(activity),
-      activityName: getActivityName(activity, ngos),
-    };
-}
-
-// format date time 
 export function formatDateTime(value: string | Date): string {
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return toText(value);
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return toText(value);
 
-    const date = formatLocalDate(parsed);
-    const time = `${padNumber(parsed.getHours())}:${padNumber(parsed.getMinutes())}`;
-    return `${date} ${time}`;
+  const date = formatLocalDate(parsed);
+  const time = `${padNumber(parsed.getHours())}:${padNumber(parsed.getMinutes())}`;
+  return `${date} ${time}`;
 }
 
-// generate activity name based on activity name, ngo name, or fallback to id
 export function getActivityName(activity: Activity, ngos: Ngo[]): string {
-    const activityName = toText(activity.name);
-    if (activityName) return activityName;
+  const activityName = toText(activity.name);
+  if (activityName) return activityName;
 
-    const ngoName = toText(activity.ngo_name);
-    if (ngoName) return ngoName;
+  const ngoName = toText(activity.ngo_name);
+  if (ngoName) return ngoName;
 
-    const ngo = getNgo(activity.ngo_id, ngos);
-    if (ngo?.name) return ngo.name;
+  const ngo = getNgo(activity.ngo_id, ngos);
+  if (ngo?.name) return ngo.name;
 
-    return `Activity ${getActivityId(activity).slice(-4)}`;
+  return `Activity ${getActivityId(activity).slice(-4)}`;
 }
 
-// generate activity id based on activity _id or fallback to random string
 export function getActivityId(activity: Activity): string {
-    return toText(activity._id);
+  return toText(activity._id);
 }
 
-// getters
 function getActivityLocation(activity: Activity, ngos: Ngo[]): string {
-    const location = toText(activity.location);
-    if (location) return location;
+  const location = toText(activity.location);
+  if (location) return location;
 
-    return getNgo(activity.ngo_id, ngos)?.location ?? 'N/A';
+  return getNgo(activity.ngo_id, ngos)?.location ?? 'N/A';
 }
 
 function buildActivityOptionBaseLabel(activity: Activity, ngos: Ngo[]): string {
-    const parts = [
-      getActivityName(activity, ngos),
-      toDateOnly(activity.date),
-      getActivityLocation(activity, ngos),
-    ].filter((part) => part && part !== 'N/A');
+  const parts = [
+    getActivityName(activity, ngos),
+    toDateOnly(activity.date),
+    getActivityLocation(activity, ngos),
+  ].filter((part) => part && part !== 'N/A');
 
-    return parts.join(' | ') || `Activity ${getActivityId(activity).slice(-4)}`;
+  return parts.join(' | ') || `Activity ${getActivityId(activity).slice(-4)}`;
 }
 
 function getNgo(ngoId: string, ngos: Ngo[]): Ngo | undefined {
-    const targetId = toText(ngoId);
-    return ngos.find((ngo) => toText(ngo._id) === targetId);
+  const targetId = toText(ngoId);
+  return ngos.find((ngo) => toText(ngo._id) === targetId);
 }
 
-// Generate a unique record ID based on registration ID or combination of activity and user IDs
 function getRecordId(registration: Registration): string {
-    return toText(registration._id) || `${registration.activity_id}-${registration.user_id}`;
+  return toText(registration._id) || `${registration.activity_id}-${registration.user_id}`;
 }
 
 function getDisplayStatus(status: Registration['status']): AdminCheckInStatus {
-    return status === 'Attended' ? 'Attended' : '-';
+  return status === 'Attended' ? 'Attended' : '-';
 }
-  
-// Convert date to YYYY-MM-DD format for report header
+
+function parseEmployeeQrPayload(rawValue: string): EmployeeQrPayload {
+  const text = toText(rawValue);
+  if (!text) return {};
+
+  try {
+    const parsed = JSON.parse(text) as Record<string, unknown>;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return {
+        userId: pickText(parsed, ['u', 'userId', 'user_id', 'employeeId', 'employee_id', '_id', 'id']),
+        email: pickText(parsed, ['email', 'employeeEmail', 'employee_email']),
+        activityId: pickText(parsed, ['a', 'activityId', 'activity_id']),
+      };
+    }
+  } catch {
+    // fall through to plain-text parsing
+  }
+
+  if (looksLikeObjectId(text)) {
+    return { userId: text };
+  }
+
+  if (looksLikeEmail(text)) {
+    return { email: text };
+  }
+
+  return {};
+}
+
+function resolveEmployeeFromQr(payload: EmployeeQrPayload, users: User[]): User | undefined {
+  const userId = toText(payload.userId);
+  if (userId) {
+    return users.find((user) => toText(user._id) === userId && user.role === 'Employee');
+  }
+
+  const email = toText(payload.email).toLowerCase();
+  if (email) {
+    return users.find((user) => toText(user.email).toLowerCase() === email && user.role === 'Employee');
+  }
+
+  return undefined;
+}
+
+function pickText(record: Record<string, unknown>, keys: string[]): string {
+  for (const key of keys) {
+    const value = toText(record[key]);
+    if (value) return value;
+  }
+
+  return '';
+}
+
+function looksLikeObjectId(value: string): boolean {
+  return /^[0-9a-fA-F]{24}$/.test(value);
+}
+
+function looksLikeEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function extractScanText(result: unknown): string {
+  if (typeof result === 'string') {
+    return result;
+  }
+
+  if (result && typeof result === 'object' && 'data' in result) {
+    return toText((result as { data?: unknown }).data);
+  }
+
+  return '';
+}
+
+function calculateCenteredSquareScanRegion(video: HTMLVideoElement) {
+  const baseSize = Math.floor(Math.min(video.videoWidth, video.videoHeight) * 0.62);
+  const size = Math.max(220, Math.min(baseSize, 340));
+  const x = Math.floor((video.videoWidth - size) / 2);
+  const y = Math.floor((video.videoHeight - size) / 2);
+
+  return {
+    x,
+    y,
+    width: size,
+    height: size,
+    downScaledWidth: 480,
+    downScaledHeight: 480,
+  };
+}
+
 function toDateOnly(value: string | Date): string {
-    if (value instanceof Date) {
-      return formatLocalDate(value);
-    }
+  if (value instanceof Date) {
+    return formatLocalDate(value);
+  }
 
-    const text = toText(value).replaceAll('/', '-');
-    if (!text) return 'N/A';
-    if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
-      return text.slice(0, 10);
-    }
+  const text = toText(value).replaceAll('/', '-');
+  if (!text) return 'N/A';
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+    return text.slice(0, 10);
+  }
 
-    const parsed = new Date(text);
-    if (!Number.isNaN(parsed.getTime())) {
-      return formatLocalDate(parsed);
-    }
+  const parsed = new Date(text);
+  if (!Number.isNaN(parsed.getTime())) {
+    return formatLocalDate(parsed);
+  }
 
-    return text.split('T')[0] || 'N/A';
+  return text.split('T')[0] || 'N/A';
 }
 
 function toText(value: unknown): string {
-    return String(value ?? '').trim();
+  return String(value ?? '').trim();
 }
 
 function formatLocalDate(value: Date): string {
-    return `${value.getFullYear()}-${padNumber(value.getMonth() + 1)}-${padNumber(value.getDate())}`;
+  return `${value.getFullYear()}-${padNumber(value.getMonth() + 1)}-${padNumber(value.getDate())}`;
 }
 
 function padNumber(value: number): string {
-    return String(value).padStart(2, '0');
+  return String(value).padStart(2, '0');
 }

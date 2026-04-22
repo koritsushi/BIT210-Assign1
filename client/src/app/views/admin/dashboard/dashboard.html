@@ -1,7 +1,10 @@
 <section class="card dashboard-card" *ngIf="!showForm">
   <div class="toolbar">
     <h2>Activity Dashboard</h2>
-    <button class="btn primary" (click)="openCreateForm()">Add New Activity</button>
+    <div class="toolbar-actions">
+      <button class="btn" type="button" (click)="goToNgoManagement()">Manage NGO</button>
+      <button class="btn primary" type="button" (click)="openCreateForm()">Add New Activity</button>
+    </div>
   </div>
 
   <div class="table-wrap">

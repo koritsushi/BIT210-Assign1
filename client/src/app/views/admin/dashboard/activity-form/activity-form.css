@@ -36,6 +36,18 @@ textarea {
   background: #fff;
 }
 
+select.select-inactive {
+  color: #9ca3af;
+}
+
+select option {
+  color: #111827;
+}
+
+select option:disabled {
+  color: #9ca3af;
+}
+
 textarea {
   resize: vertical;
 }

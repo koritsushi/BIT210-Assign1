@@ -1,8 +1,8 @@
 import * as mongodb from "mongodb";
 
 export interface Activity {
-    _id?: mongodb.ObjectId | number;
-    ngo_id: mongodb.ObjectId | number;
+    _id?: mongodb.ObjectId | string | number;
+    ngo_id: mongodb.ObjectId | string | number;
     name: string,
     date: Date;
     start_time: number;
@@ -15,5 +15,4 @@ export interface Activity {
     location?: string;
     description?: string;
     ngo_name?: string;
-    participant_user_ids?: string[];
 }

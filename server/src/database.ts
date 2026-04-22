@@ -6,7 +6,7 @@ import { Checkin } from "./modal/checkin";
 import { Registration } from "./modal/registration";
 import { Ngo } from "./modal/ngo";
 import { Notification } from "./modal/notification";
-import { mockUsers, mockActivities, mockNgos, mockRegistrations, mockNotifications } from "../mockdata";
+import { mockUsers, mockActivities, mockCheckins, mockNgos, mockRegistrations, mockNotifications } from "../mockdata";
 import { MockCollection } from "./mockCollection";
 
 export const collections: {
@@ -30,7 +30,7 @@ export async function connectDB(uri: string) {
     const checkinsCollection = db.collection<Checkin>("checkins");
     const registrationsCollection = db.collection<Registration>("registration");
     const ngosCollection = db.collection<Ngo>("ngos");
-    const notificationCollection = db.collection<Ngo>("notification");
+    const notificationCollection = db.collection<Notification>("notification");
 
     collections.users = userCollection;
     collections.activites = activitesCollection;
@@ -43,6 +43,7 @@ export async function connectDB(uri: string) {
 export async function connectMockDB(uri: string) {
     collections.users = new MockCollection<User>(mockUsers);
     collections.activites = new MockCollection<Activity>(mockActivities);
+    collections.checkins = new MockCollection<Checkin>(mockCheckins);
     collections.registrations = new MockCollection<Registration>(mockRegistrations);
     collections.ngos = new MockCollection<Ngo>(mockNgos);
     collections.notifications = new MockCollection<Notification>(mockNotifications);

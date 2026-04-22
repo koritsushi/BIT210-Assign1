@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Activity } from '../../../models/activity.model';
 import { Ngo } from '../../../models/ngo.model';
 import { ActivityService } from '../../../services/activity.service';
@@ -9,7 +10,7 @@ import { NgoService } from '../../../services/ngo.service';
 import { RegistrationService } from '../../../services/registration.servicce';
 import { ActivityFormComponent } from './activity-form/activity-form';
 
-const DEFAULT_NGO_ID = '507f1f77bcf86cd799439011';
+const DEFAULT_NGO_ID = '';
 
 export interface ActivityFormValue {
   activityName: string;
@@ -44,6 +45,7 @@ export class Dashboard implements OnInit {
   private ngoService = inject(NgoService);
   private registrationService = inject(RegistrationService);
   private fb = inject(FormBuilder);
+  private router = inject(Router);
 
   activities = this.activityService.activities$;
   ngos = this.ngoService.ngos$;
@@ -102,6 +104,10 @@ export class Dashboard implements OnInit {
     this.showForm = false;
   }
 
+  goToNgoManagement(): void {
+    this.router.navigate(['/admin/ngos']);
+  }
+
   onFormValueChange(value: ActivityFormValue): void {
     this.form.patchValue(value, { emitEvent: false });
   }
@@ -136,12 +142,16 @@ export class Dashboard implements OnInit {
       return;
     }
 
-    if (raw.ngoName) {
-      const ngo = this.ngos().find((n) => n.name === raw.ngoName);
-      if (ngo?._id) {
-        this.editingNgoId = String(ngo._id);
-      }
+    const matchedNgo = raw.ngoName
+      ? this.ngos().find((ngo) => ngo.name === raw.ngoName)
+      : undefined;
+
+    if (!matchedNgo?._id) {
+      alert('Please select a valid NGO from the existing NGO list.');
+      return;
     }
+
+    this.editingNgoId = String(matchedNgo._id);
 
     const context: ActivityFormContext = {
       editingId: this.editingId,
@@ -322,7 +332,7 @@ function buildActivityPayload(raw: ActivityFormValue, context: ActivityFormConte
     const cutoffDate = parseDateTimeMY(raw.cutoff);
 
     const activity: any = {
-        ngo_id: context.editingNgoId || DEFAULT_NGO_ID,
+        ngo_id: context.editingNgoId,
         name: raw.activityName,
         date: activityDate,           // Date object
         start_time: startTime,        // number (UTC ms)
@@ -335,7 +345,6 @@ function buildActivityPayload(raw: ActivityFormValue, context: ActivityFormConte
         location: raw.location,
         description: raw.description || '',
         ngo_name: raw.ngoName || '',
-        participant_user_ids: [],
     };
 
     // Only include _id when editing, let MongoDB generate it on create
@@ -376,12 +385,12 @@ function toFormValue(activity: Activity): ActivityFormValue {
         activityName: activity.name,
         ngoName: String(activity.ngo_name ?? '').trim(),
         location: String(activity.location ?? '').trim(),
-        whenDate: toDateOnlyMY(activity.date),      //Use Malaysia timezone
-        startTime: formatTime(activity.start_time),
-        endTime: formatTime(activity.end_time),
+        whenDate: toDateOnlyMY(activity.date),
+        startTime: formatTimeMY(activity.start_time),   // Use MY version
+        endTime: formatTimeMY(activity.end_time),       // Use MY version
         offered: Number(activity.max_slots ?? 1),
         description: String(activity.description ?? ''),
-        cutoff: toDateTimeLocalMY(activity.cutoff_datetime), //Use Malaysia timezone
+        cutoff: toDateTimeLocalMY(activity.cutoff_datetime),
     };
 }
 
@@ -404,13 +413,34 @@ function toDateTimeLocalMY(value: string | Date): string {
 }
 
 function displayWhen(activity: Activity): string {
-  return `${toDateOnly(activity.date)} ${formatTime(activity.start_time)}-${formatTime(activity.end_time)}`;
+    return `${toDateOnlyMY(activity.date)} ${formatTimeMY(activity.start_time)}-${formatTimeMY(activity.end_time)}`;
 }
 
+// Use Malaysia timezone for cutoff display
 function cutoffParts(cutoff: string | Date): { date: string; time: string } {
-  const text = toDateTimeLocal(cutoff);
-  const [date, time = ''] = text.split('T');
-  return { date, time };
+    const text = toDateTimeLocalMY(cutoff);
+    const [date, time = ''] = text.split('T');
+    return { date, time };
+}
+
+//Format timestamp in Malaysia time
+function formatTimeMY(value: number | string): string {
+    if (typeof value === 'number') {
+        // Add 8 hours offset for Malaysia time
+        const myDate = new Date(value + 8 * 60 * 60 * 1000);
+        return myDate.toISOString().slice(11, 16); // "HH:MM"
+    }
+
+    const text = String(value ?? '').trim();
+    if (!text) return '';
+
+    const maybeNumber = Number(text);
+    if (!Number.isNaN(maybeNumber) && text.length >= 10) {
+        const myDate = new Date(maybeNumber + 8 * 60 * 60 * 1000);
+        return myDate.toISOString().slice(11, 16);
+    }
+
+    return text.slice(0, 5).padStart(5, '0');
 }
 
 function getRemainingSlots(activity: Activity, taken = Number(activity.slots_taken ?? 0)): number {
@@ -424,39 +454,6 @@ function getStatus(activity: Activity, taken = Number(activity.slots_taken ?? 0)
   if (!Number.isNaN(cutoffTime) && cutoffTime <= Date.now()) return 'Closed';
   if (taken >= maxSlots) return 'Full';
   return 'Open';
-}
-
-function toDateOnly(value: string | Date): string {
-  return normalizeDate(String(value ?? '')).split('T')[0] ?? '';
-}
-
-function toDateTimeLocal(value: string | Date): string {
-  const text = normalizeDateTime(String(value ?? ''));
-  if (!text) return '';
-  return text.includes('T') ? text.slice(0, 16) : text;
-}
-
-function formatTime(value: number | string): string {
-  if (typeof value === 'number') {
-    return new Date(value).toTimeString().slice(0, 5);
-  }
-
-  const text = String(value ?? '').trim();
-  if (!text) return '';
-  if (/^\d{1,2}:\d{2}$/.test(text)) return text.padStart(5, '0');
-  if (/^\d{1,2}:\d{2}:\d{2}$/.test(text)) return text.slice(0, 5).padStart(5, '0');
-
-  const maybeNumber = Number(text);
-  if (!Number.isNaN(maybeNumber) && text.length >= 10) {
-    return new Date(maybeNumber).toTimeString().slice(0, 5);
-  }
-
-  return text.slice(0, 5).padStart(5, '0');
-}
-
-function toTimestamp(dateText: string, timeText: string): number {
-  const time = (timeText || '00:00').padStart(5, '0');
-  return new Date(`${dateText}T${time}:00`).getTime();
 }
 
 function normalizeDate(value: string): string {

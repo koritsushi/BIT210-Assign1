@@ -35,7 +35,7 @@ ngoRouter.get("/:id", async(req, res) => {
 
 ngoRouter.post("/", async (req, res) => {
     try {
-        const ngo = req.body;
+        const ngo = normalizeNgoPayload(req.body);
         const result = await collections?.ngos?.insertOne(ngo);
 
         if (result?.acknowledged) {
@@ -52,7 +52,7 @@ ngoRouter.post("/", async (req, res) => {
 ngoRouter.put("/:id", async (req, res) => {
     try {
         const id = req?.params?.id;
-        const ngo = req.body;
+        const ngo = normalizeNgoPayload(req.body);
         const query = { _id: new ObjectId(id) };
         const result = await collections?.ngos?.updateOne(query, { $set: ngo });
 
@@ -72,9 +72,35 @@ ngoRouter.put("/:id", async (req, res) => {
 
 ngoRouter.delete("/:id", async (req, res) => {
     try {
-        const id = req?.params?.id;
-        const query = { _id: new ObjectId(id) };
-        const result = await collections?.ngos?.deleteOne(query);
+        const id = String(req?.params?.id ?? "").trim();
+        let ngo: any = null;
+
+        for (const query of getNgoQueries(id)) {
+            ngo = await collections?.ngos?.findOne(query);
+            if (ngo) {
+                break;
+            }
+        }
+
+        if (!ngo) {
+            return res.status(404).send(`Failed to find an Ngo: ID ${id}`);
+        }
+
+        const activities = await collections?.activites?.find({})?.toArray() ?? [];
+        const isReferenced = activities.some((activity: any) => activityUsesNgo(activity, ngo, id));
+
+        if (isReferenced) {
+            return res.status(409).send("Cannot delete NGO because it is used by one or more activities.");
+        }
+
+        let result: any = null;
+
+        for (const query of getNgoQueries(id)) {
+            result = await collections?.ngos?.deleteOne(query);
+            if (result?.deletedCount) {
+                break;
+            }
+        }
 
         if (result && result.deletedCount) {
             res.status(202).send(`Removed an Ngo: ID ${id}`);
@@ -89,3 +115,47 @@ ngoRouter.delete("/:id", async (req, res) => {
         res.status(400).send(message);
     }
 });
+
+function getNgoQueries(id: string): any[] {
+    const text = String(id ?? "").trim();
+    const queries: any[] = [];
+
+    if (!text) {
+        return queries;
+    }
+
+    if (ObjectId.isValid(text)) {
+        queries.push({ _id: new ObjectId(text) });
+    }
+
+    queries.push({ _id: text });
+    return queries;
+}
+
+function activityUsesNgo(activity: any, ngo: any, rawNgoId: string): boolean {
+    const activityNgoId = normalizeText(activity?.ngo_id);
+    const ngoId = normalizeText(rawNgoId) || normalizeText(ngo?._id);
+
+    if (activityNgoId && ngoId && activityNgoId === ngoId) {
+        return true;
+    }
+
+    if (activityNgoId) {
+        return false;
+    }
+
+    const activityNgoName = normalizeText(activity?.ngo_name).toLowerCase();
+    const ngoName = normalizeText(ngo?.name).toLowerCase();
+    return Boolean(activityNgoName && ngoName && activityNgoName === ngoName);
+}
+
+function normalizeText(value: unknown): string {
+    return String(value ?? "").trim();
+}
+
+function normalizeNgoPayload(payload: any) {
+    return {
+        ...payload,
+        description: normalizeText(payload?.description),
+    };
+}
