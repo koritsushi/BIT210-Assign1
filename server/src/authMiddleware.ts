@@ -15,7 +15,7 @@ export interface AuthRequest extends Request {
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
-    const header = req.headers['authorization'];
+      const header = req.headers['authorization'];
 
     // Return 401
     if (!header || !header.startsWith('Bearer ')) {
@@ -40,18 +40,13 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
             return;
         }
 
-        const userId = decoded?._id ?? decoded?.id;
-
-        // Accept both legacy `id` and current `_id` token shapes.
-        if (!userId || !decoded?.role) {
+        // Validate decoded payload has expected shape
+        if (!decoded?.id || !decoded?.role) {
             res.status(401).json({ message: 'Token payload invalid' });
             return;
         }
 
-        req.user = {
-            id: String(userId),
-            role: decoded.role,
-        };
+        req.user = decoded as JwtUser;
         next();
     });
 }

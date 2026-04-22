@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../services/auth.services';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -59,8 +58,8 @@ export class Login {
                 else if (this.authService.getRole() === "Admin")
                     this.router.navigate(['./admin/dashboard']);
             },
-            error: (error: HttpErrorResponse) => {
-                this.error = error.error?.message || 'Login failed. Please try again.';
+            error: () => {
+                this.error = 'Invalid Email or password!';
             }
         })
     }

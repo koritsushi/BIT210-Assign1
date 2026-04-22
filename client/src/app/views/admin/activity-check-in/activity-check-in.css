@@ -79,6 +79,24 @@ h1 {
   height: 13px;
 }
 
+.select-field {
+  height: 44px;
+  min-width: 220px;
+  border: 1px solid #d3d7e0;
+  border-radius: 10px;
+  padding: 0 38px 0 14px;
+  font-size: 16px;
+  color: #3d4861;
+  background: #f5f7fb;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23525f77' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 12px 8px;
+  background-position: right 14px center;
+}
+
 .checkin-row {
   display: flex;
   gap: 18px;
@@ -93,101 +111,51 @@ h1 {
   box-sizing: border-box;
 }
 
-.scanner-card {
-  width: 360px;
-  flex: 0 0 360px;
+.qr-card {
+  width: 260px;
+  flex: 0 0 260px;
   padding: 20px 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  justify-content: flex-start;
   min-height: var(--checkin-panel-height);
   box-sizing: border-box;
 }
 
-.scanner-card h3 {
-  margin: 0;
+.qr-card h3 {
+  margin: 0 0 16px;
   font-size: 28px;
   color: #17355f;
 }
 
-.scanner-activity {
-  margin: 0;
-  font-size: 14px;
-  color: #334155;
-  line-height: 1.45;
-}
-
-.scanner-activity strong {
-  color: #17355f;
-}
-
-.camera-frame {
-  position: relative;
-  overflow: hidden;
-  border-radius: 16px;
-  min-height: 300px;
-  background:
-    radial-gradient(circle at top, rgba(59, 130, 246, 0.28), transparent 45%),
-    linear-gradient(145deg, #0f172a, #1e293b 55%, #111827);
-}
-
-.camera-frame video {
-  display: block;
-  width: 100%;
-  min-height: 300px;
-  object-fit: cover;
-}
-
-.camera-overlay {
-  position: absolute;
-  inset: 0;
+.qr-box {
+  width: 164px;
+  height: 164px;
+  border: 2px dashed #9ca3af;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  padding: 24px;
-  text-align: center;
-  color: #e2e8f0;
-  background: rgba(15, 23, 42, 0.72);
+  font-size: 28px;
+  font-weight: 700;
+  color: #374151;
+  background: #f9fafb;
+  margin-bottom: 12px;
 }
 
-.scan-window {
-  position: absolute;
-  inset: 50% auto auto 50%;
-  width: clamp(180px, 26vw, 220px);
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%);
-  border: 3px solid rgba(255, 255, 255, 0.92);
-  border-radius: 14px;
-  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.25);
+.qr-box canvas,
+.qr-box img,
+.qr-box svg {
+  max-width: 100%;
+  max-height: 100%;
 }
 
-.scanner-status {
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #eef4ff;
-  color: #1d4ed8;
-  font-size: 14px;
-  line-height: 1.45;
-  border: 1px solid #bfdbfe;
-}
-
-.scanner-status-success {
-  background: #f0fdf4;
-  color: #15803d;
-  border-color: #bbf7d0;
-}
-
-.scanner-status-error {
-  background: #fef2f2;
-  color: #b91c1c;
-  border-color: #fecaca;
-}
-
-.scanner-hint {
-  margin: 0;
-  color: #475569;
-  font-size: 13px;
-  line-height: 1.5;
+.qr-generate-btn {
+  margin-top: 8px;
+  min-width: 164px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .activity-list {
@@ -299,6 +267,28 @@ td:nth-child(4) {
   text-align: center;
 }
 
+.status-select {
+  width: 146px;
+  max-width: 100%;
+  min-width: 0;
+  height: 52px;
+  font-size: 16px;
+  border-radius: 14px;
+  border: 2px solid #d4d7e2;
+  background-color: #f3f4f8;
+  color: #37445f;
+  padding-right: 42px;
+  background-repeat: no-repeat;
+  background-size: 12px 8px;
+  background-position: right 16px center;
+}
+
+.status-select.absent {
+  color: #be5a6b;
+  border-color: #e1b8c2;
+  background-color: #f9eff1;
+}
+
 .report-card {
   margin-top: 18px;
   padding: 24px 22px 28px;
@@ -363,6 +353,11 @@ h3 {
   color: #b04c5b;
 }
 
+.report-table {
+  margin-left: 0.3cm;
+  width: min(920px, 100%);
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -387,17 +382,27 @@ h3 {
     font-size: 32px;
   }
 
-  h2 {
-    font-size: 32px;
-  }
-
   .activity-list-bar-inner {
     width: 100%;
   }
 
+  .select-field {
+    font-size: 14px;
+    min-width: 170px;
+  }
+
+  h2 {
+    font-size: 32px;
+  }
+
+  th,
+  td,
+  .status-select {
+    font-size: 14px;
+  }
+
   th,
   td {
-    font-size: 14px;
     padding: 12px;
   }
 
@@ -418,14 +423,13 @@ h3 {
     min-height: 0;
   }
 
-  .scanner-card {
+  .qr-card {
     width: 100%;
     flex: 1 1 auto;
   }
 
-  .camera-frame,
-  .camera-frame video {
-    min-height: 280px;
+  .status-select {
+    width: 100%;
   }
 
   .activity-list.horizontal .activity-chip {

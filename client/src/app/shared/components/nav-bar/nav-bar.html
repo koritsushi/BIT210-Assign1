@@ -19,6 +19,12 @@
                 class="nav-item">Settings
             </a>
         </div>
+        <a 
+            routerLink="/employee/scanner" 
+            routerLinkActive="active"
+            class="nav-item nav-item-scan">
+            Scan
+        </a>
     } @else if (auth.isLoggedIn() && auth.getRole() === "Admin") {
         <div class="nav-group nav-group-admin">
             <a

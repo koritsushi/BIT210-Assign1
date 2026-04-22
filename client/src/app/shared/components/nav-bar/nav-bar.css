@@ -45,6 +45,24 @@
   font-weight: 600;
 }
 
+.nav-item-scan {
+  grid-column: 3;
+  justify-self: end;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nav-item-scan:hover {
+  border-radius: 999px;
+}
+
+.nav-item-scan.active {
+  color: #1e3a8a;
+  background: #ffffff;
+  border-bottom-color: #ffffff;
+}
+
 @media (max-width: 720px) {
   .nav {
     display: flex;
@@ -57,5 +75,10 @@
   .nav-group-admin {
     flex-wrap: wrap;
     justify-content: center;
+  }
+
+  .nav-item-scan {
+    margin-left: 0;
+    align-self: flex-end;
   }
 }
