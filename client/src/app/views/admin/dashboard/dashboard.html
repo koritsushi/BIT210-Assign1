@@ -11,7 +11,7 @@
     <table>
       <thead>
         <tr>
-          <th>ID</th>
+          <th>No.</th>          <!-- ⭐ Changed from ID to No. -->
           <th>Activity</th>
           <th>When</th>
           <th>NGO</th>
@@ -25,7 +25,7 @@
       <tbody>
         @for (a of activities(); track trackActivity($index, a)) {
           <tr>
-            <td>{{ getDisplayId(a) }}</td>
+            <td>{{ $index + 1 }}</td>   <!-- ⭐ Show row number instead of ObjectId -->
             <td>
               <div class="activity-title">{{ a.name }}</div>
               <div class="activity-desc">{{ getDescription(a) }}</div>
@@ -35,7 +35,7 @@
             <td>{{ getLocation(a) }}</td>
             <td>{{ a.max_slots }}/{{ getTaken(a) }}/{{ getRemaining(a) }}</td>
             <td>
-              <div class="cutoff" [attr.data-cutoff]="getActivityId(a)">
+              <div class="cutoff">
                 <span>{{ cutoffParts(a.cutoff_datetime).date }}</span>
                 <span>{{ cutoffParts(a.cutoff_datetime).time }}</span>
               </div>
@@ -56,15 +56,21 @@
         }
       </tbody>
     </table>
+
+    <!-- ⭐ Empty state -->
+    <div *ngIf="activities().length === 0" class="empty-state">
+      No activities found.
+    </div>
   </div>
 </section>
 
 @if (showForm) {
   <section class="card form-card full-page-form">
     <div class="form-page-header">
+      <!-- ⭐ Added back button -->
+      <button class="btn small" type="button" (click)="closeForm()">← Back</button>
       <h2>{{ isEditing ? 'Edit Activity' : 'Add New Activity' }}</h2>
     </div>
-
     <app-activity-form
       [formGroup]="form"
       [isEditing]="isEditing"

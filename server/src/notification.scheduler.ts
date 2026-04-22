@@ -2,27 +2,24 @@ import cron from "node-cron";
 import { ObjectId } from "mongodb";
 import { collections } from "./database";
 
-// ─────────────────────────────────────────────
-// Helper: check if a notification was already sent
-// ─────────────────────────────────────────────
 async function alreadySent(
     activityId: string,
     userId: string,
     type: string,
     label: string
 ): Promise<boolean> {
+   // Query with both string and ObjectId formats to be safe
     const existing = await collections.notifications?.findOne({
-        activity_id: activityId,
-        user_id: userId,
-        type,
-        reminder_label: label,
+        $or: [
+            // String format (from frontend-created notifications)
+            { activity_id: activityId, user_id: userId, type, reminder_label: label },
+            // ObjectId format (in case stored differently)
+            { activity_id: new ObjectId(activityId), user_id: new ObjectId(userId), type, reminder_label: label },
+        ]
     });
     return !!existing;
 }
 
-// ─────────────────────────────────────────────
-// Helper: create a notification document
-// ─────────────────────────────────────────────
 async function createNotification(data: {
     user_id: string;
     activity_id: string;
@@ -48,33 +45,31 @@ async function createNotification(data: {
     });
 }
 
-// ─────────────────────────────────────────────
-// Helper: get days difference between now and a date
-// ─────────────────────────────────────────────
-function getDaysUntil(date: Date): number {
+function getDaysUntil(activityDate: Date): number {
     const now = new Date();
-    const diff = date.getTime() - now.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    const nowDateOnly = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate()
+    ));
+
+    const activityDateOnly = new Date(Date.UTC(
+        activityDate.getUTCFullYear(),
+        activityDate.getUTCMonth(),
+        activityDate.getUTCDate()
+    ));
+
+    const diff = activityDateOnly.getTime() - nowDateOnly.getTime();
+    return Math.round(diff / (1000 * 60 * 60 * 24));
 }
 
-// ─────────────────────────────────────────────
-// SCHEDULER: runs every hour
-// Checks all upcoming activities and sends
-// reminders at 7 days, 3 days, and 1 day before
-// ─────────────────────────────────────────────
 export function startNotificationScheduler() {
-    console.log("Notification scheduler started...");
-
-    // Run every hour
-    cron.schedule("0 * * * *", async () => {
-        console.log(`[Scheduler] Running at ${new Date().toISOString()}`);
-
+    // Activity reminders: run every hour
+    cron.schedule("* * * * *", async () => {
         try {
             const now = new Date();
 
-            // Get all upcoming activities (not yet started)
             const activities = await collections.activites?.find({
-                date: { $gt: now },
                 status: { $ne: "Closed" }
             }).toArray();
 
@@ -82,21 +77,22 @@ export function startNotificationScheduler() {
 
             for (const activity of activities) {
                 const activityId = activity._id?.toString() ?? "";
-                const daysUntil = getDaysUntil(new Date(activity.date));
+                const activityDate = new Date(activity.date);
+
+                if (activityDate <= now) continue;
+
+                const daysUntil = getDaysUntil(activityDate);
                 const activityName = activity.name ?? `Activity ${activityId.slice(-4)}`;
 
-                // Get all registrations for this activity
                 const registrations = await collections.registrations?.find({
                     activity_id: new ObjectId(activityId),
                     status: "Registered"
-                }).toArray();
-
-                if (!registrations?.length) continue;
+                }).toArray() ?? [];
 
                 for (const registration of registrations) {
                     const userId = registration.user_id?.toString() ?? "";
+                    if (!userId) continue;
 
-                    // ── 7 days reminder ──
                     if (daysUntil === 7) {
                         const label = "7-day";
                         if (!(await alreadySent(activityId, userId, "Reminder", label))) {
@@ -104,14 +100,14 @@ export function startNotificationScheduler() {
                                 user_id: userId,
                                 activity_id: activityId,
                                 type: "Reminder",
-                                title: "7-Day Reminder",  //   Added
+                                title: "7-Day Reminder",
                                 message: `Reminder: "${activityName}" is coming up in 7 days. Don't forget to prepare!`,
                                 reminder_label: label,
                             });
+                            console.log(`[Reminder] Sent 7-day reminder to user ${userId} for activity ${activityName}`);
                         }
                     }
 
-                    // ── 3 days reminder ──
                     if (daysUntil === 3) {
                         const label = "3-day";
                         if (!(await alreadySent(activityId, userId, "Reminder", label))) {
@@ -119,14 +115,14 @@ export function startNotificationScheduler() {
                                 user_id: userId,
                                 activity_id: activityId,
                                 type: "Reminder",
-                                title: "3-Day Reminder",  //   Added
+                                title: "3-Day Reminder",
                                 message: `Reminder: "${activityName}" is in 3 days. Make sure you are ready!`,
                                 reminder_label: label,
                             });
+                            console.log(`[Reminder] Sent 3-day reminder to user ${userId} for activity ${activityName}`);
                         }
                     }
 
-                    // ── 1 day reminder ──
                     if (daysUntil === 1) {
                         const label = "1-day";
                         if (!(await alreadySent(activityId, userId, "Reminder", label))) {
@@ -134,28 +130,36 @@ export function startNotificationScheduler() {
                                 user_id: userId,
                                 activity_id: activityId,
                                 type: "Reminder",
-                                title: "Tomorrow Reminder",  //   Added
+                                title: "Tomorrow Reminder",
                                 message: `Reminder: "${activityName}" is TOMORROW. Don't forget to bring your QR code!`,
                                 reminder_label: label,
                             });
+                            console.log(`[Reminder] Sent 1-day reminder to user ${userId} for activity ${activityName}`);
                         }
                     }
                 }
 
-                // ── Urgent: last slots warning ──
                 const remaining = activity.max_slots - activity.slots_taken;
                 const threshold = Math.ceil(activity.max_slots * 0.2);
 
-                if (remaining > 0 && remaining <= threshold) {
-                    const registeredUserIds = registrations.map((r: { user_id: { toString: () => any; }; }) => r.user_id?.toString());
+               if (remaining > 0 && remaining <= threshold) {
+                    const registeredUserIds = new Set(
+                        registrations.map((r: any) => r.user_id?.toString()).filter(Boolean)
+                    );
 
-                    const allUsers = await collections.users?.find({
+                    //console.log(`[LastSlots] Registered user IDs:`, [...registeredUserIds]);
+
+                    const allEmployees = await collections.users?.find({
                         role: "Employee"
-                    }).toArray();
+                    }).toArray() ?? [];
 
-                    for (const user of allUsers ?? []) {
+                    for (const user of allEmployees) {
                         const userId = user._id?.toString() ?? "";
-                        if (registeredUserIds.includes(userId)) continue;
+                        if (!userId) continue;
+
+                        //console.log(`[LastSlots] Checking user ${userId}, is registered: ${registeredUserIds.has(userId)}`);
+
+                        if (registeredUserIds.has(userId)) continue;
 
                         const label = "last-slots";
                         if (!(await alreadySent(activityId, userId, "Update", label))) {
@@ -163,55 +167,45 @@ export function startNotificationScheduler() {
                                 user_id: userId,
                                 activity_id: activityId,
                                 type: "Update",
-                                title: "Limited Slots Available",  //   Added
-                                message: `⚠ Only ${remaining} slot(s) left for "${activityName}"! Register now before it's full.`,
+                                title: "Limited Slots Available",
+                                message: `Only ${remaining} slot(s) left for "${activityName}"! Register now before it is full.`,
                                 reminder_label: label,
                             });
+                            console.log(`[LastSlots] Sent last-slots warning to user ${userId} for activity ${activityName}`);
                         }
                     }
                 }
             }
         } catch (error) {
-            console.error("[Scheduler] Error:", error);
+            console.error("[Reminder] Error:", error);
         }
     });
 
-    // ── Scheduled notifications: run every minute ──
-    // sends notifications where scheduled_at <= now and sent_at is null
+    // Scheduled notifications: run every minute
     cron.schedule("*/5 * * * * *", async () => {
-        console.log(`[TEST] Running at ${new Date().toISOString()}`);
         try {
             const now = new Date();
-            
-            //   IMPROVED: Better logging and error handling
+
             const pending = await collections.notifications?.find({
                 sent_at: null,
                 scheduled_at: { $lte: now },
             }).toArray();
 
-            console.log(`[Scheduler] Checking scheduled notifications at ${now.toISOString()}`);
-            console.log(`[Scheduler] Found ${pending?.length ?? 0} pending notifications`);
+            if (!pending?.length) return;
 
-            for (const notification of pending ?? []) {
-                console.log(`[Scheduler] Sending notification ID: ${notification._id}`);
-                
+            for (const notification of pending) {
                 try {
                     const result = await collections.notifications?.updateOne(
                         { _id: notification._id },
                         { $set: { sent_at: now } }
                     );
-                    
-                    console.log(`[Scheduler] Sent notification ${notification._id}`, result);
+                    console.log(`[Scheduled] Sent notification ${notification._id}, modified: ${result?.modifiedCount}`);
                 } catch (updateError) {
-                    console.error(`[Scheduler] Failed to send notification ${notification._id}:`, updateError);
+                    console.error(`[Scheduled] Failed to send notification ${notification._id}:`, updateError);
                 }
             }
         } catch (error) {
-            console.error("[Scheduler] Scheduled notification error:", error);
+            console.error("[Scheduled] Error:", error);
         }
     });
-    
-    console.log(" Cron jobs registered:");
-    console.log("   - Activity reminders: every hour (0 * * * *)");
-    console.log("   - Scheduled broadcasts: every minute (* * * * *)");
 }

@@ -19,7 +19,7 @@ const convertDateFields = (data: any): void => {
                     data[field] = new Date(data[field]);
                 }
                 
-                console.log(`${field}: ${originalValue} (${originalType}) -> ${data[field]} (Date: ${data[field] instanceof Date})`);
+                //console.log(`${field}: ${originalValue} (${originalType}) -> ${data[field]} (Date: ${data[field] instanceof Date})`);
             }
         });
 }
@@ -75,10 +75,11 @@ notificationRouter.post("/", async (req, res) => {
 notificationRouter.put("/:id", async (req, res) => {
     try {
         const id = req?.params?.id;
-        const notification = req.body;
-        convertDateFields(notification);
+        const { _id, ...updateData } = req.body;
+        convertDateFields(updateData);
+
         const query = { _id: new ObjectId(id) };
-        const result = await collections?.notifications?.updateOne(query, { $set: notification });
+        const result = await collections?.notifications?.updateOne(query, { $set: updateData });
 
         if (result && result.matchedCount) {
             res.status(200).json(`Updated an notification: ID ${id}.`);

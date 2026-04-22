@@ -42,30 +42,46 @@ getUserNotifications(): Notification[] {
 }
 
 getActivityName(activityId: string | null): string {
-  if (!activityId) return 'General';
+    if (!activityId) return 'General';
 
-  const activity = this.activities().find((a: any) => {
-    return String(a._id) === String(activityId);
-  });
+    const activity = this.activities().find((a: any) => {
+        return String(a._id) === String(activityId);
+    });
 
-  if (!activity) return 'Unknown Activity';
+    if (!activity) return 'Unknown Activity';
 
-  return activity.name || `Activity ${activity.qr_code}`;
-}
+    return activity.name || `Activity ${activity.qr_code}`;
+    }
 
-    // --- Soft delete all visible notifications for the user ---
-    clearNotifications() {
-        const userId = this.authService.getUserId();
+        // --- Soft delete all visible notifications for the user ---
+        clearNotifications() {
+            const userId = this.authService.getUserId();
         if (!userId) return;
 
         const userNotifications = this.getUserNotifications();
         if (userNotifications.length === 0) return;
 
+        // Update local signal immediately so UI reflects change instantly
+        const currentNotifications = this.notificationService.notifications$();
+        const updatedNotifications = currentNotifications.map(n => {
+            const isVisible = userNotifications.some(un => un._id === n._id);
+            if (isVisible) {
+                return {
+                    ...n,
+                    deleted_by: [...(n.deleted_by || []), userId]
+                };
+            }
+            return n;
+        });
+        this.notificationService.setNotifications(updatedNotifications);
+
+        // Then sync with backend in background
         let completedCount = 0;
         userNotifications.forEach(notification => {
             if (notification._id) {
                 this.softDeleteNotification(notification._id, userId, () => {
                     completedCount++;
+                    // Only refresh from server once all updates are done
                     if (completedCount === userNotifications.length) {
                         this.notificationService.getNotifications();
                     }

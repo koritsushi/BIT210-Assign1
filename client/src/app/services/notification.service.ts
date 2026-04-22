@@ -1,44 +1,36 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Notification } from '../models/notification.model';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class NotificationService {
-    notifications$ = signal<Notification[]>([]);
-    notification$ = signal<Notification>({} as Notification);
-    
-    constructor(private httpClient: HttpClient) { }
+    private http = inject(HttpClient);
 
-    private refreshNotification() {
-        this.httpClient.get<Notification[]>(`/notification`)
-        .subscribe(notification => {
-            this.notifications$.set(notification);
+    // Make signal writable and expose a setter
+    private _notifications$ = signal<Notification[]>([]);
+    notifications$ = this._notifications$.asReadonly();
+
+    getNotifications(): void {
+        this.http.get<Notification[]>('/notification').subscribe({
+            next: (data) => this._notifications$.set(data),
+            error: (err) => console.error('Failed to fetch notifications:', err)
         });
     }
 
-    getNotifications() {
-        this.refreshNotification();
-        return this.notifications$();
-    }
-
-    getNotification(id: string) {
-        this.httpClient.get<Notification>(`/notification/${id}`).subscribe(notification => {
-        this.notification$.set(notification);
-        return this.notifications$();
-        });
+    // Add this method to allow optimistic updates
+    setNotifications(notifications: Notification[]): void {
+        this._notifications$.set(notifications);
     }
 
     createNotification(notification: Notification) {
-        return this.httpClient.post(`/notification`, notification, { responseType: 'text' });
+        return this.http.post('/notification', notification);
     }
 
-    updateNotification(id: string, notification: Notification) {
-        return this.httpClient.put(`/notification/${id}`, notification, { responseType: 'text' });
+    updateNotification(id: string, notification: Partial<Notification>) {
+        return this.http.put(`/notification/${id}`, notification);
     }
 
     deleteNotification(id: string) {
-        return this.httpClient.delete(`/notification/${id}`, { responseType: 'text' });
+        return this.http.delete(`/notification/${id}`, { responseType: 'text' });
     }
 }

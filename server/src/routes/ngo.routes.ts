@@ -52,7 +52,9 @@ ngoRouter.post("/", async (req, res) => {
 ngoRouter.put("/:id", async (req, res) => {
     try {
         const id = req?.params?.id;
-        const ngo = normalizeNgoPayload(req.body);
+        const { _id, ...updateData } = req.body;
+        const ngo = normalizeNgoPayload(updateData);
+
         const query = { _id: new ObjectId(id) };
         const result = await collections?.ngos?.updateOne(query, { $set: ngo });
 
@@ -154,8 +156,9 @@ function normalizeText(value: unknown): string {
 }
 
 function normalizeNgoPayload(payload: any) {
+    const { _id, ...rest } = payload;
     return {
-        ...payload,
+        ...rest,
         description: normalizeText(payload?.description),
     };
 }

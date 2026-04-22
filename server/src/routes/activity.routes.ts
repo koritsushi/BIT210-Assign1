@@ -9,22 +9,15 @@ activityRouter.use(express.json());
 // Helper: convert and validate activity fields
 // ─────────────────────────────────────────────
 const convertActivityFields = (data: any): void => {
-    // Convert ngo_id string to ObjectId
     if (data.ngo_id && typeof data.ngo_id === 'string') {
         data.ngo_id = new ObjectId(data.ngo_id);
     }
 
-    // Convert date strings to Date objects
     if (data.date && typeof data.date === 'string') {
         data.date = new Date(data.date);
     }
     if (data.cutoff_datetime && typeof data.cutoff_datetime === 'string') {
-        // cutoff_datetime comes as "2026-04-22T00:00" (local time, no timezone)
-        // Parse as Malaysia time (UTC+8)
-        const [datePart, timePart] = data.cutoff_datetime.split('T');
-        const [year, month, day] = datePart.split('-').map(Number);
-        const [hours, minutes] = (timePart ?? '00:00').split(':').map(Number);
-        data.cutoff_datetime = new Date(Date.UTC(year, month - 1, day, hours - 8, minutes, 0));
+        data.cutoff_datetime = new Date(data.cutoff_datetime);  // ⭐ No -8 hours!
     }
 
     // Ensure int fields are integers
@@ -65,12 +58,12 @@ activityRouter.post("/", async (req, res) => {
     try {
         const data = req.body;
 
-        console.log("Received activity:", JSON.stringify(data, null, 2));
+        //console.log("Received activity:", JSON.stringify(data, null, 2));
 
         // Convert fields before inserting
         convertActivityFields(data);
 
-        console.log("Inserting activity:", JSON.stringify(data, null, 2));
+        //console.log("Inserting activity:", JSON.stringify(data, null, 2));
 
         const result = await collections?.activites?.insertOne(data);
 
@@ -91,10 +84,10 @@ activityRouter.put("/:id", async (req, res) => {
         const data = req.body;
 
         // Convert fields before updating
-        convertActivityFields(data);
-
+        const { _id, ...updateData } = req.body;
+        convertActivityFields(updateData);
         const query = { _id: new ObjectId(id) };
-        const result = await collections?.activites?.updateOne(query, { $set: data });
+        const result = await collections?.activites?.updateOne(query, { $set: updateData });
 
         if (result && result.matchedCount) {
             res.status(200).send(`Updated an activity: ID ${id}.`);

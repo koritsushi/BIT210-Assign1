@@ -98,9 +98,11 @@ userRouter.put("/:id/toggle-2fa", async (req, res) => {
 userRouter.put("/:id", async (req, res) => {
     try {
         const id = req?.params?.id;
-        const user = req.body;
+        const { _id, password, ...updateData } = req.body;
+
         const query = { _id: new ObjectId(id) };
-        const result = await collections?.users?.updateOne(query, { $set: user });
+        const result = await collections?.users?.updateOne(query, { $set: updateData });
+
 
         if (result && result.matchedCount) {
             res.status(200).json(`Updated an employee: ID ${id}.`);

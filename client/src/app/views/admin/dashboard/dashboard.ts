@@ -215,10 +215,6 @@ export class Dashboard implements OnInit {
     });
   }
 
-  getDisplayId(activity: Activity): string {
-    return this.getActivityId(activity) || '-';
-  }
-
   getNgoName(activity: Activity): string {
     if (activity.ngo_name) {
       return activity.ngo_name;
@@ -269,7 +265,9 @@ export class Dashboard implements OnInit {
   }
 
   cutoffParts(cutoff: string | Date): { date: string; time: string } {
-    return cutoffParts(cutoff);
+    const text = toDateTimeLocalMY(cutoff);
+    const [date, time = ''] = text.split('T');
+    return { date, time };
   }
 
   trackActivity(index: number, activity: Activity): string {
@@ -395,7 +393,10 @@ function toFormValue(activity: Activity): ActivityFormValue {
 }
 
 //Convert UTC date to Malaysia date string for display
-function toDateOnlyMY(value: string | Date): string {
+function toDateOnlyMY(value: string | Date | any): string {
+     if (value && typeof value === 'object' && '$date' in value) {
+        value = value.$date;
+    }
     const date = new Date(String(value ?? ''));
     if (isNaN(date.getTime())) return '';
     // Add 8 hours for Malaysia time
@@ -404,7 +405,16 @@ function toDateOnlyMY(value: string | Date): string {
 }
 
 // Convert UTC datetime to Malaysia datetime-local string for display
-function toDateTimeLocalMY(value: string | Date): string {
+function toDateTimeLocalMY(value: string | Date | any): string {
+     if (value && typeof value === 'object' && '$date' in value) {
+        value = value.$date;
+    }
+    
+    // Handle already being a Date object
+    if (value instanceof Date) {
+        const myDate = new Date(value.getTime() + 8 * 60 * 60 * 1000);
+        return myDate.toISOString().slice(0, 16);
+    }
     const date = new Date(String(value ?? ''));
     if (isNaN(date.getTime())) return '';
     // Add 8 hours for Malaysia time
@@ -424,7 +434,11 @@ function cutoffParts(cutoff: string | Date): { date: string; time: string } {
 }
 
 //Format timestamp in Malaysia time
-function formatTimeMY(value: number | string): string {
+function formatTimeMY(value: number | string | any): string {
+    if (value && typeof value === 'object' && '$date' in value) {
+        value = new Date(value.$date).getTime();
+    }
+
     if (typeof value === 'number') {
         // Add 8 hours offset for Malaysia time
         const myDate = new Date(value + 8 * 60 * 60 * 1000);

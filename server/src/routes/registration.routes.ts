@@ -62,12 +62,12 @@ registrationRouter.post("/", async (req, res) => {
     try {
         const data = req.body;
 
-        console.log("📥 Received registration:", JSON.stringify(data, null, 2));
+        //console.log("Received registration:", JSON.stringify(data, null, 2));
 
-        // ⭐ Convert fields before inserting
+        // Convert fields before inserting
         convertRegistrationFields(data);
 
-        console.log("📤 Inserting registration:", JSON.stringify(data, null, 2));
+        //console.log("Inserting registration:", JSON.stringify(data, null, 2));
 
         const result = await collections?.registrations?.insertOne(data);
 
@@ -85,13 +85,12 @@ registrationRouter.post("/", async (req, res) => {
 registrationRouter.put("/:id", async (req, res) => {
     try {
         const id = req?.params?.id;
-        const data = req.body;
-
-        // ⭐ Convert fields before updating
-        convertRegistrationFields(data);
+        const { _id, ...updateData } = req.body;
+        convertRegistrationFields(updateData);
 
         const query = { _id: new ObjectId(id) };
-        const result = await collections?.registrations?.updateOne(query, { $set: data });
+        const result = await collections?.registrations?.updateOne(query, { $set: updateData });
+
 
         if (result && result.matchedCount) {
             res.status(200).send(`Updated a registration: ID ${id}.`);
