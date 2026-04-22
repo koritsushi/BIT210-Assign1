@@ -35,6 +35,7 @@ import { notificationRouter } from "./routes/notification.routes";
 import { authMiddleware } from "./authMiddleware";
 import { requireRole } from "./roleMiddleware";
 import { startNotificationScheduler } from "./notification.scheduler";
+import { qrEmailRouter } from "./routes/qr-email.routes";
 
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,  // 15 minutes
@@ -58,6 +59,7 @@ app.use("/auth", authRouter);
 //route middleware
 app.use(authMiddleware);
 //private api routes
+app.use("/qr-email", qrEmailRouter);
 app.use("/users", userRouter);
 app.use("/activity", activityRouter);
 app.use("/checkin", checkinRouter);

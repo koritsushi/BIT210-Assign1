@@ -177,53 +177,37 @@ export class ActivityCheckIn implements OnInit, AfterViewInit, OnDestroy {
 
   async sendQrCodes(): Promise<void> {
     if (!this.currentActivityId) {
-      this.setEmailDispatchMessage('error', 'Please select an activity before sending QR codes.');
-      return;
+        this.setEmailDispatchMessage('error', 'Please select an activity before sending QR codes.');
+        return;
     }
 
-    const participants = getEligibleEmployeesForActivity(
-      this.currentActivityId,
-      this.registrations(),
-      this.users(),
-    );
-
-    if (!participants.length) {
-      this.setEmailDispatchMessage('error', 'No active registered employees found for this activity.');
-      return;
+    if (!this.canSendQrCodes) {
+        this.setEmailDispatchMessage('error', 'No active registered employees found for this activity.');
+        return;
     }
 
     this.isSendingQrs = true;
     this.setEmailDispatchMessage('info', 'Sending QR codes to registered employees...');
     this.cdr.detectChanges();
 
-    const activityLabel = this.currentActivitySelection || 'Selected Activity';
-    const activityDate = this.reportDate;
-    let sent = 0;
-    let skipped = 0;
-
-    for (const employee of participants) {
-      try {
-        await this.qrEmailService.sendEmployeeQr({
-          employee,
-          activityId: this.currentActivityId,
-          activityLabel,
-          activityDate,
+    try {
+        // Single call to backend - it handles all employees
+        const result = await this.qrEmailService.sendEmployeeQr({
+            activityId: this.currentActivityId,
         });
-        sent += 1;
-      } catch {
-        skipped += 1;
-      }
-    }
 
-    this.isSendingQrs = false;
-    this.setEmailDispatchMessage(
-      sent
-        ? 'success'
-        : 'error',
-      `QR email dispatch finished. Sent ${sent}${skipped ? `, skipped ${skipped}` : ''}.`,
-    );
-    this.cdr.detectChanges();
-  }
+        this.setEmailDispatchMessage(
+            result.sent > 0 ? 'success' : 'error',
+            result.message
+        );
+    } catch (error: any) {
+        const message = error?.error?.message ?? 'Failed to send QR codes. Please try again.';
+        this.setEmailDispatchMessage('error', message);
+    } finally {
+        this.isSendingQrs = false;
+        this.cdr.detectChanges();
+    }
+}
 
   selectActivity(activityId: string): void {
     if (this.selectedActivityId !== activityId) {
