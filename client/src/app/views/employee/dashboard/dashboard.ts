@@ -147,7 +147,7 @@ export class Dashboard implements OnInit {
 
     this.registrationService.deleteRegistration(registration._id.toString()).subscribe({
         next: () => {
-            // ⭐ FIX: Only send slots_taken, not the full spread object
+            // Only send slots_taken, not the full spread object
             this.activityService.updateActivity(activity._id!, {
                 slots_taken: Math.max(0, activity.slots_taken - 1)
             } as any).subscribe({

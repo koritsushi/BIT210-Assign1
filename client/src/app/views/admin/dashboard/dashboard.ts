@@ -376,12 +376,12 @@ function toFormValue(activity: Activity): ActivityFormValue {
         activityName: activity.name,
         ngoName: String(activity.ngo_name ?? '').trim(),
         location: String(activity.location ?? '').trim(),
-        whenDate: toDateOnlyMY(activity.date),      //Use Malaysia timezone
-        startTime: formatTime(activity.start_time),
-        endTime: formatTime(activity.end_time),
+        whenDate: toDateOnlyMY(activity.date),
+        startTime: formatTimeMY(activity.start_time),   // Use MY version
+        endTime: formatTimeMY(activity.end_time),       // Use MY version
         offered: Number(activity.max_slots ?? 1),
         description: String(activity.description ?? ''),
-        cutoff: toDateTimeLocalMY(activity.cutoff_datetime), //Use Malaysia timezone
+        cutoff: toDateTimeLocalMY(activity.cutoff_datetime),
     };
 }
 
@@ -404,13 +404,34 @@ function toDateTimeLocalMY(value: string | Date): string {
 }
 
 function displayWhen(activity: Activity): string {
-  return `${toDateOnly(activity.date)} ${formatTime(activity.start_time)}-${formatTime(activity.end_time)}`;
+    return `${toDateOnlyMY(activity.date)} ${formatTimeMY(activity.start_time)}-${formatTimeMY(activity.end_time)}`;
 }
 
+// Use Malaysia timezone for cutoff display
 function cutoffParts(cutoff: string | Date): { date: string; time: string } {
-  const text = toDateTimeLocal(cutoff);
-  const [date, time = ''] = text.split('T');
-  return { date, time };
+    const text = toDateTimeLocalMY(cutoff);
+    const [date, time = ''] = text.split('T');
+    return { date, time };
+}
+
+//Format timestamp in Malaysia time
+function formatTimeMY(value: number | string): string {
+    if (typeof value === 'number') {
+        // Add 8 hours offset for Malaysia time
+        const myDate = new Date(value + 8 * 60 * 60 * 1000);
+        return myDate.toISOString().slice(11, 16); // "HH:MM"
+    }
+
+    const text = String(value ?? '').trim();
+    if (!text) return '';
+
+    const maybeNumber = Number(text);
+    if (!Number.isNaN(maybeNumber) && text.length >= 10) {
+        const myDate = new Date(maybeNumber + 8 * 60 * 60 * 1000);
+        return myDate.toISOString().slice(11, 16);
+    }
+
+    return text.slice(0, 5).padStart(5, '0');
 }
 
 function getRemainingSlots(activity: Activity, taken = Number(activity.slots_taken ?? 0)): number {
@@ -424,39 +445,6 @@ function getStatus(activity: Activity, taken = Number(activity.slots_taken ?? 0)
   if (!Number.isNaN(cutoffTime) && cutoffTime <= Date.now()) return 'Closed';
   if (taken >= maxSlots) return 'Full';
   return 'Open';
-}
-
-function toDateOnly(value: string | Date): string {
-  return normalizeDate(String(value ?? '')).split('T')[0] ?? '';
-}
-
-function toDateTimeLocal(value: string | Date): string {
-  const text = normalizeDateTime(String(value ?? ''));
-  if (!text) return '';
-  return text.includes('T') ? text.slice(0, 16) : text;
-}
-
-function formatTime(value: number | string): string {
-  if (typeof value === 'number') {
-    return new Date(value).toTimeString().slice(0, 5);
-  }
-
-  const text = String(value ?? '').trim();
-  if (!text) return '';
-  if (/^\d{1,2}:\d{2}$/.test(text)) return text.padStart(5, '0');
-  if (/^\d{1,2}:\d{2}:\d{2}$/.test(text)) return text.slice(0, 5).padStart(5, '0');
-
-  const maybeNumber = Number(text);
-  if (!Number.isNaN(maybeNumber) && text.length >= 10) {
-    return new Date(maybeNumber).toTimeString().slice(0, 5);
-  }
-
-  return text.slice(0, 5).padStart(5, '0');
-}
-
-function toTimestamp(dateText: string, timeText: string): number {
-  const time = (timeText || '00:00').padStart(5, '0');
-  return new Date(`${dateText}T${time}:00`).getTime();
 }
 
 function normalizeDate(value: string): string {
