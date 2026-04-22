@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Activity } from '../../../models/activity.model';
 import { Ngo } from '../../../models/ngo.model';
 import { ActivityService } from '../../../services/activity.service';
@@ -8,7 +10,8 @@ import { NgoService } from '../../../services/ngo.service';
 import { RegistrationService } from '../../../services/registration.servicce';
 import { ActivityFormComponent } from './activity-form/activity-form';
 
-const DEFAULT_NGO_ID = '507f1f77bcf86cd799439011';
+const DEFAULT_NGO_ID = '';
+const MALAYSIA_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 export interface ActivityFormValue {
   activityName: string;
@@ -27,14 +30,13 @@ export interface ActivityFormContext {
   editingId: string | null;
   editingNgoId: string;
   editingQrCode: string;
-  editingStatus: Activity['status'];
   editingTaken: number;
   isEditing: boolean;
 }
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, ReactiveFormsModule, ActivityFormComponent],
+  imports: [CommonModule, ActivityFormComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -43,6 +45,7 @@ export class Dashboard implements OnInit {
   private ngoService = inject(NgoService);
   private registrationService = inject(RegistrationService);
   private fb = inject(FormBuilder);
+  private router = inject(Router);
 
   activities = this.activityService.activities$;
   ngos = this.ngoService.ngos$;
@@ -52,8 +55,6 @@ export class Dashboard implements OnInit {
   isEditing = false;
 
   editingId: string | null = null;
-  editingTaken = 0;
-  editingStatus: Activity['status'] = 'Open';
   editingNgoId = DEFAULT_NGO_ID;
   editingQrCode = '';
 
@@ -78,8 +79,6 @@ export class Dashboard implements OnInit {
     this.showForm = true;
     this.isEditing = false;
     this.editingId = null;
-    this.editingTaken = 0;
-    this.editingStatus = 'Open';
     this.editingNgoId = DEFAULT_NGO_ID;
     this.editingQrCode = '';
 
@@ -99,6 +98,10 @@ export class Dashboard implements OnInit {
 
   closeForm(): void {
     this.showForm = false;
+  }
+
+  goToNgoManagement(): void {
+    this.router.navigate(['/admin/ngos']);
   }
 
   onFormValueChange(value: ActivityFormValue): void {
@@ -127,20 +130,25 @@ export class Dashboard implements OnInit {
     }
 
     const raw = this.form.getRawValue() as ActivityFormValue;
+    const currentTaken = this.isEditing ? this.getEditingTakenCount() : 0;
+    const offered = Math.max(1, Number(raw.offered || 1));
 
-    if (raw.ngoName) {
-      const ngo = this.ngos().find((n) => n.name === raw.ngoName);
-      if (ngo?._id) {
-        this.editingNgoId = String(ngo._id);
-      }
+    if (this.isEditing && offered < currentTaken) {
+      alert(`Total slots cannot be lower than the current registered count (${currentTaken}).`);
+      return;
+    }
+
+    const selectedNgo = this.ngos().find((ngo) => ngo.name === raw.ngoName);
+    if (!selectedNgo?._id) {
+      alert('Please select a valid NGO.');
+      return;
     }
 
     const context: ActivityFormContext = {
       editingId: this.editingId,
-      editingNgoId: this.editingNgoId,
+      editingNgoId: String(selectedNgo._id),
       editingQrCode: this.editingQrCode,
-      editingStatus: this.editingStatus,
-      editingTaken: this.editingTaken,
+      editingTaken: currentTaken,
       isEditing: this.isEditing,
     };
 
@@ -156,8 +164,9 @@ export class Dashboard implements OnInit {
         this.closeForm();
         this.loadData();
       },
-      error: () => {
-        alert(this.isEditing ? 'Failed to update activity.' : 'Failed to create activity.');
+      error: (error) => {
+        const fallback = this.isEditing ? 'Failed to update activity.' : 'Failed to create activity.';
+        alert(this.getRequestErrorMessage(error, fallback));
       },
     });
   }
@@ -166,8 +175,6 @@ export class Dashboard implements OnInit {
     this.showForm = true;
     this.isEditing = true;
     this.editingId = this.getActivityId(activity);
-    this.editingTaken = this.getTaken(activity);
-    this.editingStatus = this.getStatus(activity);
     this.editingNgoId = this.toText(activity.ngo_id) || DEFAULT_NGO_ID;
     this.editingQrCode = activity.qr_code ?? '';
 
@@ -196,8 +203,8 @@ export class Dashboard implements OnInit {
     });
   }
 
-  getDisplayId(index: number): string {
-    return `NGO-${index + 1}`;
+  getDisplayId(activity: Activity): string {
+    return this.getActivityId(activity) || '-';
   }
 
   getNgoName(activity: Activity): string {
@@ -263,116 +270,91 @@ export class Dashboard implements OnInit {
     this.registrationService.getRegistrations();
   }
 
+  private getEditingTakenCount(): number {
+    if (!this.editingId) {
+      return 0;
+    }
+
+    return this.registrations().filter(
+      (registration) =>
+        this.toText(registration.activity_id) === this.editingId &&
+        registration.status !== 'Cancelled',
+    ).length;
+  }
+
   private toText(value: unknown): string {
     return String(value ?? '').trim();
   }
-}
 
-function buildActivityPayload(raw: ActivityFormValue, context: ActivityFormContext): Omit<Activity, '_id'> & { _id?: string } {
-    const dateStr = normalizeDate(raw.whenDate); // "2026-04-22"
-    
-    const maxSlots = Math.max(1, Number(raw.offered || 1));
-    const taken = Math.min(Number(context.editingTaken || 0), maxSlots);
+  private getRequestErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof HttpErrorResponse) {
+      const serverMessage =
+        typeof error.error === 'string'
+          ? error.error.trim()
+          : typeof error.error?.message === 'string'
+            ? error.error.message.trim()
+            : '';
 
-    // Convert date string to proper Date object (Malaysia UTC+8)
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const activityDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-
-    //Timestamps using Malaysia timezone
-    const startTime = toTimestampMY(dateStr, raw.startTime);
-    const endTime = toTimestampMY(dateStr, raw.endTime);
-
-    // cutoff_datetime as proper Date object (Malaysia UTC+8)
-    const cutoffDate = parseDateTimeMY(raw.cutoff);
-
-    const activity: any = {
-        ngo_id: context.editingNgoId || DEFAULT_NGO_ID,
-        name: raw.activityName,
-        date: activityDate,           // Date object
-        start_time: startTime,        // number (UTC ms)
-        end_time: endTime,            // number (UTC ms)
-        max_slots: maxSlots,          // number
-        slots_taken: taken,           // number
-        cutoff_datetime: cutoffDate,  // Date object
-        status: 'Open' as Activity['status'],
-        qr_code: context.editingQrCode || '',
-        location: raw.location,
-        description: raw.description || '',
-        ngo_name: raw.ngoName || '',
-        participant_user_ids: [],
-    };
-
-    // Only include _id when editing, let MongoDB generate it on create
-    if (context.isEditing && context.editingId) {
-        activity._id = context.editingId;
+      return serverMessage || fallback;
     }
 
-    activity.status = getStatus(activity, taken);
-    return activity;
+    return fallback;
+  }
 }
 
-//Parse datetime-local string as Malaysia time (UTC+8)
-function parseDateTimeMY(value: string): Date {
-    const text = normalizeDateTime(value); // "2026-04-22T00:00"
-    if (!text || !text.includes('T')) return new Date(text);
-    
-    const [datePart, timePart] = text.split('T');
-    const [year, month, day] = datePart.split('-').map(Number);
-    const [hours, minutes] = (timePart || '00:00').split(':').map(Number);
-    
-    // Subtract 8 hours to convert Malaysia time (UTC+8) to UTC
-    return new Date(Date.UTC(year, month - 1, day, hours - 8, minutes, 0));
-}
+function buildActivityPayload(
+  raw: ActivityFormValue,
+  context: ActivityFormContext,
+): Omit<Activity, '_id'> & { _id?: string } {
+  const dateText = normalizeDate(raw.whenDate);
+  const maxSlots = Math.max(1, Number(raw.offered || 1));
+  const taken = Math.min(Number(context.editingTaken || 0), maxSlots);
 
-// Timestamp using Malaysia timezone
-function toTimestampMY(dateText: string, timeText: string): number {
-    const time = (timeText || '00:00').padStart(5, '0');
-    const [year, month, day] = dateText.split('-').map(Number);
-    const [hours, minutes] = time.split(':').map(Number);
-    
-    // Subtract 8 hours to convert Malaysia time (UTC+8) to UTC
-    return new Date(Date.UTC(year, month - 1, day, hours - 8, minutes, 0)).getTime();
+  const activity: Omit<Activity, '_id'> & { _id?: string } = {
+    ngo_id: context.editingNgoId,
+    name: raw.activityName,
+    date: parseMalaysiaDate(dateText),
+    start_time: toTimestampMY(dateText, raw.startTime),
+    end_time: toTimestampMY(dateText, raw.endTime),
+    max_slots: maxSlots,
+    slots_taken: taken,
+    cutoff_datetime: parseDateTimeMY(raw.cutoff),
+    status: 'Open',
+    qr_code: context.editingQrCode || '',
+    location: raw.location,
+    description: raw.description || '',
+    ngo_name: raw.ngoName || '',
+  };
+
+  if (context.isEditing && context.editingId) {
+    activity._id = context.editingId;
+  }
+
+  activity.status = getStatus(activity, taken);
+  return activity;
 }
 
 function toFormValue(activity: Activity): ActivityFormValue {
-    return {
-        id: String(activity._id ?? '').trim(),
-        activityName: activity.name,
-        ngoName: String(activity.ngo_name ?? '').trim(),
-        location: String(activity.location ?? '').trim(),
-        whenDate: toDateOnlyMY(activity.date),      //Use Malaysia timezone
-        startTime: formatTime(activity.start_time),
-        endTime: formatTime(activity.end_time),
-        offered: Number(activity.max_slots ?? 1),
-        description: String(activity.description ?? ''),
-        cutoff: toDateTimeLocalMY(activity.cutoff_datetime), //Use Malaysia timezone
-    };
-}
-
-//Convert UTC date to Malaysia date string for display
-function toDateOnlyMY(value: string | Date): string {
-    const date = new Date(String(value ?? ''));
-    if (isNaN(date.getTime())) return '';
-    // Add 8 hours for Malaysia time
-    const myDate = new Date(date.getTime() + 8 * 60 * 60 * 1000);
-    return myDate.toISOString().split('T')[0];
-}
-
-// Convert UTC datetime to Malaysia datetime-local string for display
-function toDateTimeLocalMY(value: string | Date): string {
-    const date = new Date(String(value ?? ''));
-    if (isNaN(date.getTime())) return '';
-    // Add 8 hours for Malaysia time
-    const myDate = new Date(date.getTime() + 8 * 60 * 60 * 1000);
-    return myDate.toISOString().slice(0, 16); // "2026-04-22T08:00"
+  return {
+    id: String(activity._id ?? '').trim(),
+    activityName: activity.name,
+    ngoName: String(activity.ngo_name ?? '').trim(),
+    location: String(activity.location ?? '').trim(),
+    whenDate: toDateOnlyMY(activity.date),
+    startTime: formatTimeMY(activity.start_time),
+    endTime: formatTimeMY(activity.end_time),
+    offered: Number(activity.max_slots ?? 1),
+    description: String(activity.description ?? ''),
+    cutoff: toDateTimeLocalMY(activity.cutoff_datetime),
+  };
 }
 
 function displayWhen(activity: Activity): string {
-  return `${toDateOnly(activity.date)} ${formatTime(activity.start_time)}-${formatTime(activity.end_time)}`;
+  return `${toDateOnlyMY(activity.date)} ${formatTimeMY(activity.start_time)}-${formatTimeMY(activity.end_time)}`;
 }
 
 function cutoffParts(cutoff: string | Date): { date: string; time: string } {
-  const text = toDateTimeLocal(cutoff);
+  const text = toDateTimeLocalMY(cutoff);
   const [date, time = ''] = text.split('T');
   return { date, time };
 }
@@ -390,19 +372,40 @@ function getStatus(activity: Activity, taken = Number(activity.slots_taken ?? 0)
   return 'Open';
 }
 
-function toDateOnly(value: string | Date): string {
-  return normalizeDate(String(value ?? '')).split('T')[0] ?? '';
+function parseMalaysiaDate(value: string): Date {
+  const text = normalizeDate(value);
+  const [year, month, day] = text.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
 }
 
-function toDateTimeLocal(value: string | Date): string {
-  const text = normalizeDateTime(String(value ?? ''));
-  if (!text) return '';
-  return text.includes('T') ? text.slice(0, 16) : text;
+function parseDateTimeMY(value: string): Date {
+  const text = normalizeDateTime(value);
+  if (!text || !text.includes('T')) return new Date(text);
+
+  const [datePart, timePart = '00:00'] = text.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+
+  return new Date(Date.UTC(year, month - 1, day, hours - 8, minutes, 0));
 }
 
-function formatTime(value: number | string): string {
+function toDateOnlyMY(value: string | Date): string {
+  const date = new Date(String(value ?? ''));
+  if (Number.isNaN(date.getTime())) return '';
+
+  return new Date(date.getTime() + MALAYSIA_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+function toDateTimeLocalMY(value: string | Date): string {
+  const date = new Date(String(value ?? ''));
+  if (Number.isNaN(date.getTime())) return '';
+
+  return new Date(date.getTime() + MALAYSIA_OFFSET_MS).toISOString().slice(0, 16);
+}
+
+function formatTimeMY(value: number | string): string {
   if (typeof value === 'number') {
-    return new Date(value).toTimeString().slice(0, 5);
+    return new Date(value + MALAYSIA_OFFSET_MS).toISOString().slice(11, 16);
   }
 
   const text = String(value ?? '').trim();
@@ -412,15 +415,18 @@ function formatTime(value: number | string): string {
 
   const maybeNumber = Number(text);
   if (!Number.isNaN(maybeNumber) && text.length >= 10) {
-    return new Date(maybeNumber).toTimeString().slice(0, 5);
+    return new Date(maybeNumber + MALAYSIA_OFFSET_MS).toISOString().slice(11, 16);
   }
 
   return text.slice(0, 5).padStart(5, '0');
 }
 
-function toTimestamp(dateText: string, timeText: string): number {
+function toTimestampMY(dateText: string, timeText: string): number {
   const time = (timeText || '00:00').padStart(5, '0');
-  return new Date(`${dateText}T${time}:00`).getTime();
+  const [year, month, day] = dateText.split('-').map(Number);
+  const [hours, minutes] = time.split(':').map(Number);
+
+  return new Date(Date.UTC(year, month - 1, day, hours - 8, minutes, 0)).getTime();
 }
 
 function normalizeDate(value: string): string {
@@ -431,15 +437,4 @@ function normalizeDateTime(value: string): string {
   const text = String(value ?? '').trim().replaceAll('/', '-');
   if (!text) return '';
   return text.includes('T') ? text : text.replace(' ', 'T');
-}
-
-function generateId(): string {
-  const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
-  let random = '';
-
-  while (random.length < 16) {
-    random += Math.random().toString(16).slice(2);
-  }
-
-  return (timestamp + random.slice(0, 16)).slice(0, 24);
 }

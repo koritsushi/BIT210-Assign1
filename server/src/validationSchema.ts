@@ -69,7 +69,6 @@ export async function SchemaValidation(db: mongodb.Db) {
                 status: { enum: ["Open", "Full", "Closed"] },
                 qr_code: { bsonType: "string" },
                 location: { bsonType: "string" },
-                participant_user_ids: { bsonType: "array" },
             },
         },
     };
