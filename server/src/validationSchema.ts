@@ -103,26 +103,70 @@ export async function SchemaValidation(db: mongodb.Db) {
     };
 
     const notificationSchema = {
-    $jsonSchema: {
-        bsonType: "object",
-        required: ["type", "message", "is_broadcast", "is_read_by", "deleted_by"],
-        properties: {
-            _id:                      { bsonType: "objectId" },
-            user_id:                  { bsonType: ["string", "null"] },
-            activity_id:              { bsonType: ["string", "null"] },
-            type:                     { enum: ["Registration", "Cancellation", "Reminder", "Update", "Broadcast"] },
-            message:                  { bsonType: "string" },
-            is_broadcast:             { bsonType: "bool" },
-            is_read_by:               { bsonType: "array" },
-            deleted_by:               { bsonType: "array" },
-            sent_at:                  { bsonType: ["date", "null"] },
-            scheduled_at:             { bsonType: ["date", "null"] },
-            repeat_interval_minutes:  { bsonType: ["int", "null"] },
-            repeat_until:             { bsonType: ["date", "null"] },
-            reminder_label:           { bsonType: ["string", "null"] },
+        $jsonSchema: {
+            bsonType: "object",
+            required: ["type", "title", "message", "is_broadcast"],
+            description: "Schema for storing user and broadcast notifications in the system",
+            properties: {
+                _id: {
+                    bsonType: "objectId",
+                    description: "Unique identifier for the notification document"
+                },
+                user_id: {
+                    bsonType: ["string", "null"],
+                    description: "ID of the target user. Null if the notification is a broadcast"
+                },
+                activity_id: {
+                    bsonType: ["string", "null"],
+                    description: "Associated activity or event ID related to this notification"
+                },
+                type: {
+                    enum: ["Registration", "Cancellation", "Reminder", "Update", "Broadcast"],
+                    description: "Type/category of the notification"
+                },
+                title: {
+                    bsonType: "string",
+                    description: "Short title or heading of the notification"
+                },
+                message: {
+                    bsonType: "string",
+                    description: "Detailed message content of the notification"
+                },
+                is_broadcast: {
+                    bsonType: "bool",
+                    description: "Indicates whether the notification is sent to all users (true) or a specific user (false)"
+                },
+                is_read_by: {
+                    bsonType: "array",
+                    description: "List of user IDs who have read this notification"
+                },
+                deleted_by: {
+                    bsonType: "array",
+                    description: "List of user IDs who have deleted or hidden this notification"
+                },
+                sent_at: {
+                    bsonType: ["date", "null"],
+                    description: "Timestamp when the notification was actually sent"
+                },
+                scheduled_at: {
+                    bsonType: ["date", "null"],
+                    description: "Timestamp when the notification is scheduled to be sent"
+                },
+                repeat_interval_minutes: {
+                    bsonType: ["number", "null"],
+                    description: "Interval in minutes for repeating the notification (e.g., reminders)"
+                },
+                repeat_until: {
+                    bsonType: ["date", "null"],
+                    description: "End date/time until which the notification should keep repeating"
+                },
+                reminder_label: {
+                    bsonType: ["string", "null"],
+                    description: "Custom label for the reminder (e.g., '1 hour before', 'Daily reminder')"
+                }
+            }
         }
-    }
-};
+    };
 
   // Apply all schemas
     const collections = [

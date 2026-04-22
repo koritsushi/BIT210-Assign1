@@ -72,6 +72,7 @@ export const mockNotifications: Notification[] = [
         user_id: userId1,
         activity_id: activityId1,
         type: "Registration",
+        title: "Registered to Beach Cleaning",
         message: "You have successfully registered for Beach Cleaning on 2026-04-10.",
         is_broadcast: false,
         is_read_by: [],
@@ -80,7 +81,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-03-01T10:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
-        reminder_laber: null,
+        reminder_label: null,
     },
 
     // --- Cancellation notification ---
@@ -89,6 +90,7 @@ export const mockNotifications: Notification[] = [
         user_id: userId2,
         activity_id: activityId2,
         type: "Cancellation",
+        title: "Cancell to Beach Cleaning",
         message: "Your registration for Food Bank Packing has been cancelled.",
         is_broadcast: false,
         is_read_by: [userId2.toString()],     // user2 already read it
@@ -97,7 +99,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-03-05T09:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
-        reminder_laber: null,
+        reminder_label: null,
     },
 
     // --- Scheduled reminder — 1 week before ---
@@ -106,6 +108,7 @@ export const mockNotifications: Notification[] = [
         user_id: userId1,
         activity_id: activityId1,
         type: "Reminder",
+        title: "Reminder to Beach Cleaning",
         message: "Reminder: Beach Cleaning is coming up in 1 week on 2026-04-10. Please be prepared!",
         is_broadcast: false,
         is_read_by: [],
@@ -114,7 +117,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-04-03T08:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
-        reminder_laber: null,
+        reminder_label: null,
     },
 
     // --- Scheduled reminder — 3 days before ---
@@ -123,6 +126,7 @@ export const mockNotifications: Notification[] = [
         user_id: userId1,
         activity_id: activityId1,
         type: "Reminder",
+        title: "Beach Cleaning",
         message: "Reminder: Beach Cleaning is in 3 days on 2026-04-10. Check your schedule!",
         is_broadcast: false,
         is_read_by: [userId1.toString()],     // user1 already read it
@@ -131,7 +135,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-04-07T08:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
-        reminder_laber: null,
+        reminder_label: null,
     },
 
     // --- Scheduled reminder — 1 day before ---
@@ -140,6 +144,7 @@ export const mockNotifications: Notification[] = [
         user_id: userId1,
         activity_id: activityId1,
         type: "Reminder",
+        title: "Beach Cleaning",
         message: "Reminder: Beach Cleaning is TOMORROW on 2026-04-10. Don't forget to bring your QR code!",
         is_broadcast: false,
         is_read_by: [],
@@ -148,7 +153,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-04-09T08:00:00"),
         repeat_interval_minutes: 60,          // repeat every 60 mins
         repeat_until: new Date("2026-04-09T20:00:00"),
-        reminder_laber: null,
+        reminder_label: null,
     },
 
     // --- Activity update ---
@@ -157,6 +162,7 @@ export const mockNotifications: Notification[] = [
         user_id: userId2,
         activity_id: activityId2,
         type: "Update",
+        title: "Food Bank Packing activity",
         message: "Food Bank Packing activity details have been updated. New location: PJ Community Center Level 2.",
         is_broadcast: false,
         is_read_by: [],
@@ -165,7 +171,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-03-15T14:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
-        reminder_laber: null,
+        reminder_label: null,
     },
 
     // --- Urgent update — last available slots ---
@@ -174,6 +180,7 @@ export const mockNotifications: Notification[] = [
         user_id: userId2,
         activity_id: activityId2,
         type: "Update",
+        title: "Last Slot",
         message: "Urgent: Only 2 slots remaining for Food Bank Packing on 2026-04-10. Register now!",
         is_broadcast: false,
         is_read_by: [],
@@ -182,7 +189,7 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-03-20T10:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
-        reminder_laber: null,
+        reminder_label: null,
     },
 
     // --- Admin broadcast to all employees ---
@@ -191,6 +198,7 @@ export const mockNotifications: Notification[] = [
         user_id: undefined,                   // no specific user — broadcast to all
         activity_id: undefined,               // not activity specific
         type: "Broadcast",
+        title: "Service Day 2026",
         message: "Service Day 2026 is coming! Browse available NGO activities and register before the cut-off dates. Let's make a difference together!",
         is_broadcast: true,
         is_read_by: [userId1.toString()],     // user1 read it, user2 hasn't
@@ -199,6 +207,6 @@ export const mockNotifications: Notification[] = [
         scheduled_at: new Date("2026-03-01T09:00:00"),
         repeat_interval_minutes: null,
         repeat_until: null,
-        reminder_laber: null,
+        reminder_label: null,
     },
 ]

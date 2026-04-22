@@ -58,8 +58,8 @@
                         <span class="notification-type-badge">{{ notification.type }}</span>
                     </div>
                     <span class="notification-message">{{ notification.message }}</span>
-                    <span class="notification-activity">Activity: {{ getActivityName(notification.activity_id) }}</span>
-                    <span class="notification-time">{{ formatTimestamp(notification.sent_at) }}</span>
+                    <span class="notification-activity">Activity: {{ getActivityName(notification.activity_id) || 'None' }}</span>
+                    <span *ngIf="notification.sent_at" class="notification-time">{{ formatTimestamp(notification.sent_at) }}</span>
                 </div>
 
                 <button 

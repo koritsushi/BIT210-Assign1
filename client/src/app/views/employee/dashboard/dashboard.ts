@@ -124,9 +124,10 @@ export class Dashboard implements OnInit {
           next: () => {
             this.registrationService.getRegistrations();
             this.activityService.getActivities();
+            const title = `Registered an Activity`
             const message = `Registered for "${activity.name}"`;
             this.showToast(message, 'success');
-            this.sendNotification(userId, activity._id!, 'Registration', message);
+            this.sendNotification(userId, activity._id!, 'Registration', title, message);
           },
           error: () => this.showToast(`Failed to update slots for "${activity.name}"`, 'error')
         });
@@ -150,9 +151,10 @@ export class Dashboard implements OnInit {
           next: () => {
             this.registrationService.getRegistrations();
             this.activityService.getActivities();
+            const title = `Cancelled Registration`
             const message = `Cancelled registration for "${activity.name}"`;
             this.showToast(message, 'info');
-            this.sendNotification(userId, activity._id!, 'Cancellation', message);
+            this.sendNotification(userId, activity._id!, 'Cancellation', title, message);
           },
           error: () => this.showToast(`Failed to update slots for "${activity.name}"`, 'error')
         });
@@ -200,9 +202,10 @@ export class Dashboard implements OnInit {
       next: () => {
         this.registrationService.getRegistrations();
         this.activityService.getActivities();
+        const title = `Swapped Activities`
         const message = `Swapped from "${from.name}" to "${activity.name}"`;
         this.showToast(message, 'success');
-        this.sendNotification(userId, activity._id!, 'Update', message);
+        this.sendNotification(userId, activity._id!, 'Update', title, message);
         this.currentSwapActivity = null;
       },
       error: () => this.showToast(`Failed to swap from "${from.name}" to "${activity.name}"`, 'error')
@@ -224,12 +227,14 @@ export class Dashboard implements OnInit {
     userId: string,
     activityId: string,
     type: 'Registration' | 'Cancellation' | 'Reminder' | 'Update' | 'Broadcast',
+    title: string,
     message: string
   ): void {
     const notification: Notification = {
       user_id: userId,
       activity_id: activityId,
       type,
+      title,
       message,
       is_broadcast: false,
       is_read_by: [],
@@ -237,7 +242,8 @@ export class Dashboard implements OnInit {
       sent_at: new Date(),
       scheduled_at: null,
       repeat_interval_minutes: null,
-      repeat_until: null
+      repeat_until: null,
+      reminder_label: null
     };
 
     this.notificationService.createNotification(notification).subscribe({
