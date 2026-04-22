@@ -268,52 +268,103 @@ export class Dashboard implements OnInit {
   }
 }
 
-function buildActivityPayload(raw: ActivityFormValue, context: ActivityFormContext): Activity {
-  const date = normalizeDate(raw.whenDate);
-  const id = context.isEditing && context.editingId ? context.editingId : generateId();
+function buildActivityPayload(raw: ActivityFormValue, context: ActivityFormContext): Omit<Activity, '_id'> & { _id?: string } {
+    const dateStr = normalizeDate(raw.whenDate); // "2026-04-22"
+    
+    const maxSlots = Math.max(1, Number(raw.offered || 1));
+    const taken = Math.min(Number(context.editingTaken || 0), maxSlots);
 
-  const maxSlots = Math.max(1, Number(raw.offered || 1));
-  const taken = Math.min(Number(context.editingTaken || 0), maxSlots);
+    // Convert date string to proper Date object (Malaysia UTC+8)
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const activityDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
 
-  const startTime = toTimestamp(date, raw.startTime);
-  const endTime = toTimestamp(date, raw.endTime);
-  const cutoff = normalizeDateTime(raw.cutoff);
+    //Timestamps using Malaysia timezone
+    const startTime = toTimestampMY(dateStr, raw.startTime);
+    const endTime = toTimestampMY(dateStr, raw.endTime);
 
-  const activity: Activity = {
-    _id: id,
-    ngo_id: context.editingNgoId || DEFAULT_NGO_ID,
-    name: raw.activityName,
-    date,
-    start_time: startTime,
-    end_time: endTime,
-    max_slots: maxSlots,
-    slots_taken: taken,
-    cutoff_datetime: cutoff,
-    status: 'Open',
-    qr_code: context.editingQrCode || '',
-    location: raw.location,
-    description: raw.description || '',
-    ngo_name: raw.ngoName || '',
-    participant_user_ids: [],
-  };
+    // cutoff_datetime as proper Date object (Malaysia UTC+8)
+    const cutoffDate = parseDateTimeMY(raw.cutoff);
 
-  activity.status = getStatus(activity, taken);
-  return activity;
+    const activity: any = {
+        ngo_id: context.editingNgoId || DEFAULT_NGO_ID,
+        name: raw.activityName,
+        date: activityDate,           // Date object
+        start_time: startTime,        // number (UTC ms)
+        end_time: endTime,            // number (UTC ms)
+        max_slots: maxSlots,          // number
+        slots_taken: taken,           // number
+        cutoff_datetime: cutoffDate,  // Date object
+        status: 'Open' as Activity['status'],
+        qr_code: context.editingQrCode || '',
+        location: raw.location,
+        description: raw.description || '',
+        ngo_name: raw.ngoName || '',
+        participant_user_ids: [],
+    };
+
+    // Only include _id when editing, let MongoDB generate it on create
+    if (context.isEditing && context.editingId) {
+        activity._id = context.editingId;
+    }
+
+    activity.status = getStatus(activity, taken);
+    return activity;
+}
+
+//Parse datetime-local string as Malaysia time (UTC+8)
+function parseDateTimeMY(value: string): Date {
+    const text = normalizeDateTime(value); // "2026-04-22T00:00"
+    if (!text || !text.includes('T')) return new Date(text);
+    
+    const [datePart, timePart] = text.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hours, minutes] = (timePart || '00:00').split(':').map(Number);
+    
+    // Subtract 8 hours to convert Malaysia time (UTC+8) to UTC
+    return new Date(Date.UTC(year, month - 1, day, hours - 8, minutes, 0));
+}
+
+// Timestamp using Malaysia timezone
+function toTimestampMY(dateText: string, timeText: string): number {
+    const time = (timeText || '00:00').padStart(5, '0');
+    const [year, month, day] = dateText.split('-').map(Number);
+    const [hours, minutes] = time.split(':').map(Number);
+    
+    // Subtract 8 hours to convert Malaysia time (UTC+8) to UTC
+    return new Date(Date.UTC(year, month - 1, day, hours - 8, minutes, 0)).getTime();
 }
 
 function toFormValue(activity: Activity): ActivityFormValue {
-  return {
-    id: String(activity._id ?? '').trim(),
-    activityName: activity.name,
-    ngoName: String(activity.ngo_name ?? '').trim(),
-    location: String(activity.location ?? '').trim(),
-    whenDate: toDateOnly(activity.date),
-    startTime: formatTime(activity.start_time),
-    endTime: formatTime(activity.end_time),
-    offered: Number(activity.max_slots ?? 1),
-    description: String(activity.description ?? ''),
-    cutoff: toDateTimeLocal(activity.cutoff_datetime),
-  };
+    return {
+        id: String(activity._id ?? '').trim(),
+        activityName: activity.name,
+        ngoName: String(activity.ngo_name ?? '').trim(),
+        location: String(activity.location ?? '').trim(),
+        whenDate: toDateOnlyMY(activity.date),      //Use Malaysia timezone
+        startTime: formatTime(activity.start_time),
+        endTime: formatTime(activity.end_time),
+        offered: Number(activity.max_slots ?? 1),
+        description: String(activity.description ?? ''),
+        cutoff: toDateTimeLocalMY(activity.cutoff_datetime), //Use Malaysia timezone
+    };
+}
+
+//Convert UTC date to Malaysia date string for display
+function toDateOnlyMY(value: string | Date): string {
+    const date = new Date(String(value ?? ''));
+    if (isNaN(date.getTime())) return '';
+    // Add 8 hours for Malaysia time
+    const myDate = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+    return myDate.toISOString().split('T')[0];
+}
+
+// Convert UTC datetime to Malaysia datetime-local string for display
+function toDateTimeLocalMY(value: string | Date): string {
+    const date = new Date(String(value ?? ''));
+    if (isNaN(date.getTime())) return '';
+    // Add 8 hours for Malaysia time
+    const myDate = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+    return myDate.toISOString().slice(0, 16); // "2026-04-22T08:00"
 }
 
 function displayWhen(activity: Activity): string {

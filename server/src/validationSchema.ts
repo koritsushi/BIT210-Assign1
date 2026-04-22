@@ -51,21 +51,26 @@ export async function SchemaValidation(db: mongodb.Db) {
 
     const activitySchema = {
         $jsonSchema: {
-        bsonType: "object",
-        required: ["ngo_id", "date", "start_time", "end_time", "max_slots", "slots_taken", "cutoff_datetime", "status", "qr_code"],
-        additionalProperties: false,
-        properties: {
-            _id: { bsonType: "objectId" },
-            ngo_id: { bsonType: "objectId" },
-            date: { bsonType: "date" },
-            start_time: { bsonType: "number" },
-            end_time: { bsonType: "number" },
-            max_slots: { bsonType: "int" },
-            slots_taken: { bsonType: "int" },
-            cutoff_datetime: { bsonType: "date" },
-            status: { enum: ["Open", "Full", "Closed"] },
-            qr_code: { bsonType: "string" },
-        },
+            bsonType: "object",
+            required: ["ngo_id", "date", "start_time", "end_time", "max_slots", "slots_taken", "cutoff_datetime", "status", "qr_code"],
+            additionalProperties: false,
+            properties: {
+                _id: { bsonType: "objectId" },
+                ngo_id: { bsonType: "objectId" },
+                name: { bsonType: "string" },
+                description: { bsonType: "string" },
+                ngo_name: { bsonType: "string" },
+                date: { bsonType: "date" },
+                start_time: { bsonType: "number" },
+                end_time: { bsonType: "number" },
+                max_slots: { bsonType: "int" },
+                slots_taken: { bsonType: "int" },
+                cutoff_datetime: { bsonType: "date" },
+                status: { enum: ["Open", "Full", "Closed"] },
+                qr_code: { bsonType: "string" },
+                location: { bsonType: "string" },
+                participant_user_ids: { bsonType: "array" },
+            },
         },
     };
 
