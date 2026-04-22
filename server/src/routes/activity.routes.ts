@@ -51,11 +51,19 @@ activityRouter.get("/:id", async (req, res) => {
         const query = { _id: new ObjectId(id) };
         const activity = await collections?.activites?.findOne(query);
 
-        if (activity) {
-            res.status(200).send(activity);
-        } else {
-            res.status(404).send(`Failed to find an activity: ID: ${id}`);
+        // Some old records use ObjectId, some use string _id.
+        for (const query of getActivityQueries(id)) {
+            activity = await collections?.activites?.findOne(query);
+            if (activity) {
+                break;
+            }
         }
+
+        if (!activity) {
+            return res.status(404).send(`Failed to find an activity: ID: ${id}`);
+        }
+
+        res.status(200).send(activity);
     } catch (error) {
         res.status(500).send(error instanceof Error ? error.message : "Unknown Error");
     }
@@ -90,19 +98,22 @@ activityRouter.put("/:id", async (req, res) => {
         const id = req?.params?.id;
         const data = req.body;
 
-        // ⭐ Convert fields before updating
+        // Convert fields before updating
         convertActivityFields(data);
 
         const query = { _id: new ObjectId(id) };
         const result = await collections?.activites?.updateOne(query, { $set: data });
 
-        if (result && result.matchedCount) {
-            res.status(200).send(`Updated an activity: ID ${id}.`);
-        } else if (!result?.matchedCount) {
-            res.status(404).send(`Failed to find an activity: ID ${id}`);
-        } else {
-            res.status(304).send(`Failed to update an activity: ID ${id}`);
+            if (result?.matchedCount) {
+                break;
+            }
         }
+
+        if (!result?.matchedCount) {
+            return res.status(404).send(`Failed to find an activity: ID ${id}`);
+        }
+
+        res.status(200).send(`Updated an activity: ID ${id}.`);
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
         console.error("PUT /activity/:id error:", message);
@@ -112,17 +123,22 @@ activityRouter.put("/:id", async (req, res) => {
 
 activityRouter.delete("/:id", async (req, res) => {
     try {
-        const id = req?.params?.id;
-        const query = { _id: new ObjectId(id) };
-        const result = await collections?.activites?.deleteOne(query);
+        const id = String(req?.params?.id ?? "").trim();
+        let result: any = null;
 
-        if (result && result.deletedCount) {
-            res.status(202).send(`Removed an activity: ID ${id}`);
-        } else if (!result) {
-            res.status(400).send(`Failed to remove an activity: ID ${id}`);
-        } else if (!result.deletedCount) {
-            res.status(404).send(`Failed to find an activity: ID ${id}`);
+        // Try both possible _id formats.
+        for (const query of getActivityQueries(id)) {
+            result = await collections?.activites?.deleteOne(query);
+            if (result?.deletedCount) {
+                break;
+            }
         }
+
+        if (!result?.deletedCount) {
+            return res.status(404).send(`Failed to find an activity: ID ${id}`);
+        }
+
+        res.status(202).send(`Removed an activity: ID ${id}`);
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
         console.error("DELETE /activity/:id error:", message);

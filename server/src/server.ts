@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import { connectDB, connectMockDB } from "./database";
+import { connectDB } from "./database";
 import dns from "node:dns/promises";
 import rateLimit from 'express-rate-limit';
 

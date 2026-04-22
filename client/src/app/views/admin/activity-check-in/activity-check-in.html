@@ -30,7 +30,13 @@
   <div class="checkin-row content-width">
     <section class="card table-card">
       <h2>Employee Check-In List</h2>
-      <table>
+      <table class="checkin-table">
+        <colgroup>
+          <col class="col-name" />
+          <col class="col-department" />
+          <col class="col-time" />
+          <col class="col-status" />
+        </colgroup>
         <thead>
           <tr>
             <th>Name</th>
@@ -46,7 +52,7 @@
               <td>{{ record.department }}</td>
               <td>{{ record.checkInTime }}</td>
               <td>
-                <span class="status-pill" [class.absent]="record.status === 'Absent'">
+                <span class="status-pill" [class.absent]="record.status === '-'">
                   {{ record.status }}
                 </span>
               </td>

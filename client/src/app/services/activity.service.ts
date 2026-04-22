@@ -32,14 +32,19 @@ export class ActivityService {
     }
 
     createActivity(activity: Activity) {
-        return this.httpClient.post(`/activity`, activity, { responseType: 'text' });
+        return this.httpClient.post(`/activity`, this.toRequestBody(activity), { responseType: 'text' });
     }
 
     updateActivity(id: string, activity: Activity) {
-        return this.httpClient.put(`/activity/${id}`, activity, { responseType: 'text' });
+        return this.httpClient.put(`/activity/${id}`, this.toRequestBody(activity), { responseType: 'text' });
     }
 
     deleteActivity(id: string) {
         return this.httpClient.delete(`/activity/${id}`, { responseType: 'text' });
+    }
+
+    private toRequestBody(activity: Activity): Omit<Activity, '_id'> {
+        const { _id, ...payload } = activity;
+        return payload;
     }
 }
