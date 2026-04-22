@@ -2,18 +2,25 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { QRCodeComponent } from 'angularx-qrcode';
-import { Checkin, CheckInRecord, CheckInStatus, ActivityMeta } from '../../../models/checkin.model';
+import { ActivityMeta } from '../../../models/checkin.model';
 import { Activity } from '../../../models/activity.model';
 import { Ngo } from '../../../models/ngo.model';
 import { Registration } from '../../../models/registration.model';
 import { User } from '../../../models/user.model';
 import { ActivityService } from '../../../services/activity.service';
-import { CheckinService } from '../../../services/checkin.service';
 import { NgoService } from '../../../services/ngo.service';
 import { RegistrationService } from '../../../services/registration.servicce';
 import { UserService } from '../../../services/user.service';
 
-interface AdminCheckInRecord extends CheckInRecord {
+type AdminCheckInStatus = 'Attended' | '-';
+
+interface AdminCheckInRecord {
+  id: string;
+  name: string;
+  department: string;
+  checkInTime: string;
+  status: AdminCheckInStatus;
+  activity: string;
   activityId: string;
 }
 
@@ -30,14 +37,12 @@ export interface ActivityOption {
 })
 export class ActivityCheckIn implements OnInit, OnDestroy {
   private activityService = inject(ActivityService);
-  private checkinService = inject(CheckinService);
   private registrationService = inject(RegistrationService);
   private userService = inject(UserService);
   private ngoService = inject(NgoService);
 
   // Observables for activities, registrations, users, and NGOs
   activities = this.activityService.activities$;
-  checkins = this.checkinService.checkins$;
   registrations = this.registrationService.registrations$;
   users = this.userService.users$;
   ngos = this.ngoService.ngos$;
@@ -66,7 +71,6 @@ export class ActivityCheckIn implements OnInit, OnDestroy {
   get records(): AdminCheckInRecord[] {
     return buildRecords(
       this.activities(),
-      this.checkins(),
       this.registrations(),
       this.users(),
       this.ngos(),
@@ -101,6 +105,9 @@ export class ActivityCheckIn implements OnInit, OnDestroy {
   }
 
   selectActivity(activityId: string): void {
+    if (this.selectedActivityId !== activityId) {
+      this.showReport = false;
+    }
     this.selectedActivityId = activityId;
     this.generatedQrText = '';
   }
@@ -128,7 +135,7 @@ export class ActivityCheckIn implements OnInit, OnDestroy {
   }
 
   get absentCount(): number {
-    return this.filteredRecords.filter((record) => record.status === 'Absent').length;
+    return this.filteredRecords.filter((record) => record.status === '-').length;
   }
 
   get attendanceRate(): number {
@@ -153,7 +160,6 @@ export class ActivityCheckIn implements OnInit, OnDestroy {
   }
 
   private refreshDynamicData(): void {
-    this.checkinService.getCheckins();
     this.registrationService.getRegistrations();
   }
 
@@ -196,7 +202,6 @@ export function resolveSelectedActivityId(selectedActivityId: string, options: A
 
 export function buildRecords(
     activities: Activity[],
-    checkins: Checkin[],
     registrations: Registration[],
     users: User[],
     ngos: Ngo[],
@@ -204,34 +209,24 @@ export function buildRecords(
     const activityMap = new Map<string, Activity>();
     activities.forEach((activity) => activityMap.set(getActivityId(activity), activity));
 
-    const checkinMap = new Map<string, Checkin>();
-    checkins.forEach((checkin) => {
-      const registrationId = toText(checkin.registration_id);
-      if (registrationId) {
-        checkinMap.set(registrationId, checkin);
-      }
-    });
-
     const userMap = new Map<string, User>();
     users.forEach((user) => userMap.set(toText(user._id), user));
 
     return registrations
-      .filter((registration) => registration.status !== 'Cancelled')
       .map((registration) => {
         const activity = activityMap.get(toText(registration.activity_id));
         const user = userMap.get(toText(registration.user_id));
         if (!activity || !user) return null;
 
         const recordId = getRecordId(registration);
-        const checkin = findCheckin(checkinMap, checkins, registration);
-        const status: CheckInStatus = checkin?.status ?? 'Absent';
-        const timeSource = checkin?.checkin_time;
+        const status = getDisplayStatus(registration.status);
+        const timeSource = status === 'Attended' ? registration.checkedin_at : null;
 
         return {
           id: recordId,
           name: user.name,
-          department: user.department,
-          checkInTime: timeSource ? formatDateTime(timeSource) : '--',
+          department: toText(user.department) || '-',
+          checkInTime: timeSource ? formatDateTime(timeSource) : '-',
           status,
           activityId: getActivityId(activity),
           activity: getActivityName(activity, ngos),
@@ -321,19 +316,8 @@ function getRecordId(registration: Registration): string {
     return toText(registration._id) || `${registration.activity_id}-${registration.user_id}`;
 }
 
-function findCheckin(
-    checkinMap: Map<string, Checkin>,
-    checkins: Checkin[],
-    registration: Registration,
-): Checkin | undefined {
-    const recordId = getRecordId(registration);
-    const directMatch = checkinMap.get(recordId);
-    if (directMatch) return directMatch;
-
-    return checkins.find((checkin) =>
-      toText(checkin.user_id) === toText(registration.user_id)
-      && toText(checkin.activity_id) === toText(registration.activity_id),
-    );
+function getDisplayStatus(status: Registration['status']): AdminCheckInStatus {
+    return status === 'Attended' ? 'Attended' : '-';
 }
   
 // Convert date to YYYY-MM-DD format for report header

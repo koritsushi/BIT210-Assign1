@@ -90,7 +90,7 @@ activityRouter.put("/:id", async (req, res) => {
         const id = req?.params?.id;
         const data = req.body;
 
-        // ⭐ Convert fields before updating
+        // Convert fields before updating
         convertActivityFields(data);
 
         const query = { _id: new ObjectId(id) };

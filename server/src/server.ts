@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import { connectDB, connectMockDB } from "./database";
+import { connectDB } from "./database";
 import dns from "node:dns/promises";
 import rateLimit from 'express-rate-limit';
 
@@ -48,16 +48,16 @@ const authLimiter = rateLimit({
     message: { message: 'Too many login attempts, please try again later.' }
 });
 
-//route middleware (NOT READY)
-app.use(authMiddleware);
-
 //api limit
 app.use(generalLimiter);
+
 app.use('/auth/login', authLimiter);
 app.use('/auth/register', authLimiter);
-
-//api routes
+//public routes
 app.use("/auth", authRouter);
+//route middleware
+app.use(authMiddleware);
+//private api routes
 app.use("/users", userRouter);
 app.use("/activity", activityRouter);
 app.use("/checkin", checkinRouter);

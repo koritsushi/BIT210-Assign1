@@ -22,7 +22,7 @@
       <tbody>
         @for (a of activities(); track trackActivity($index, a)) {
           <tr>
-            <td>{{ getDisplayId($index) }}</td>
+            <td>{{ getDisplayId(a) }}</td>
             <td>
               <div class="activity-title">{{ a.name }}</div>
               <div class="activity-desc">{{ getDescription(a) }}</div>
@@ -59,7 +59,6 @@
 @if (showForm) {
   <section class="card form-card full-page-form">
     <div class="form-page-header">
-      <button class="btn small" type="button" (click)="closeForm()">← Back</button>
       <h2>{{ isEditing ? 'Edit Activity' : 'Add New Activity' }}</h2>
     </div>
 

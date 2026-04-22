@@ -221,12 +221,33 @@ table {
   border-collapse: collapse;
 }
 
+.checkin-table {
+  table-layout: fixed;
+}
+
+.checkin-table .col-name {
+  width: 27%;
+}
+
+.checkin-table .col-department {
+  width: 26%;
+}
+
+.checkin-table .col-time {
+  width: 27%;
+}
+
+.checkin-table .col-status {
+  width: 140px;
+}
+
 th,
 td {
   text-align: left;
   padding: 16px 26px;
   font-size: 16px;
   border-bottom: 1px solid #e3e6ee;
+  vertical-align: middle;
 }
 
 th {
@@ -238,6 +259,12 @@ th {
 th:nth-child(3),
 td:nth-child(3) {
   padding-left: 26px;
+  white-space: nowrap;
+}
+
+th:nth-child(4),
+td:nth-child(4) {
+  text-align: center;
 }
 
 .status-select {
@@ -332,7 +359,10 @@ h3 {
 }
 
 .status-pill {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
   padding: 4px 12px;
   border-radius: 10px;
   background: #dbe7e7;
@@ -374,6 +404,10 @@ h3 {
   th,
   td {
     padding: 12px;
+  }
+
+  .checkin-table .col-status {
+    width: 104px;
   }
 
   th:nth-child(3),

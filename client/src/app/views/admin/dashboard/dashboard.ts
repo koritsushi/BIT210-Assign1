@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Activity } from '../../../models/activity.model';
@@ -127,6 +128,13 @@ export class Dashboard implements OnInit {
     }
 
     const raw = this.form.getRawValue() as ActivityFormValue;
+    const currentTaken = this.isEditing ? this.getEditingTakenCount() : 0;
+    const offered = Math.max(1, Number(raw.offered || 1));
+
+    if (this.isEditing && offered < currentTaken) {
+      alert(`Total slots cannot be lower than the current registered count (${currentTaken}).`);
+      return;
+    }
 
     if (raw.ngoName) {
       const ngo = this.ngos().find((n) => n.name === raw.ngoName);
@@ -140,7 +148,7 @@ export class Dashboard implements OnInit {
       editingNgoId: this.editingNgoId,
       editingQrCode: this.editingQrCode,
       editingStatus: this.editingStatus,
-      editingTaken: this.editingTaken,
+      editingTaken: currentTaken,
       isEditing: this.isEditing,
     };
 
@@ -156,8 +164,9 @@ export class Dashboard implements OnInit {
         this.closeForm();
         this.loadData();
       },
-      error: () => {
-        alert(this.isEditing ? 'Failed to update activity.' : 'Failed to create activity.');
+      error: (error) => {
+        const fallback = this.isEditing ? 'Failed to update activity.' : 'Failed to create activity.';
+        alert(this.getRequestErrorMessage(error, fallback));
       },
     });
   }
@@ -196,8 +205,8 @@ export class Dashboard implements OnInit {
     });
   }
 
-  getDisplayId(index: number): string {
-    return `NGO-${index + 1}`;
+  getDisplayId(activity: Activity): string {
+    return this.getActivityId(activity) || '-';
   }
 
   getNgoName(activity: Activity): string {
@@ -263,8 +272,35 @@ export class Dashboard implements OnInit {
     this.registrationService.getRegistrations();
   }
 
+  private getEditingTakenCount(): number {
+    if (!this.editingId) {
+      return 0;
+    }
+
+    return this.registrations().filter(
+      (registration) =>
+        this.toText(registration.activity_id) === this.editingId &&
+        registration.status !== 'Cancelled',
+    ).length;
+  }
+
   private toText(value: unknown): string {
     return String(value ?? '').trim();
+  }
+
+  private getRequestErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof HttpErrorResponse) {
+      const serverMessage =
+        typeof error.error === 'string'
+          ? error.error.trim()
+          : typeof error.error?.message === 'string'
+            ? error.error.message.trim()
+            : '';
+
+      return serverMessage || fallback;
+    }
+
+    return fallback;
   }
 }
 
@@ -431,15 +467,4 @@ function normalizeDateTime(value: string): string {
   const text = String(value ?? '').trim().replaceAll('/', '-');
   if (!text) return '';
   return text.includes('T') ? text : text.replace(' ', 'T');
-}
-
-function generateId(): string {
-  const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
-  let random = '';
-
-  while (random.length < 16) {
-    random += Math.random().toString(16).slice(2);
-  }
-
-  return (timestamp + random.slice(0, 16)).slice(0, 24);
 }
