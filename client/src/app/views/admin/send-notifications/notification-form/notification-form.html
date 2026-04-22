@@ -82,9 +82,9 @@
     (ngModelChange)="emitFormChange()"
   >
     <option value="">Select an activity</option>
-    <option *ngFor="let activity of activities" [value]="activity._id">
-      {{ activity.name }}
-    </option>
+<option *ngFor="let activity of activities" [value]="activity._id?.toString()">
+  {{ activity.name || ('Activity ' + activity.qr_code) }}
+</option>
   </select>
 </div>
 
