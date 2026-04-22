@@ -49,7 +49,7 @@ const authLimiter = rateLimit({
 });
 
 //route middleware (NOT READY)
-//app.use(authMiddleware);
+app.use(authMiddleware);
 
 //api limit
 app.use(generalLimiter);

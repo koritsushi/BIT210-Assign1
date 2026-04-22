@@ -1,9 +1,9 @@
 import * as mongodb from "mongodb";
 
 export interface Registration {
-    _id?: mongodb.ObjectId | number;
-    user_id: mongodb.ObjectId | number;
-    activity_id: mongodb.ObjectId | number;
+    _id?: mongodb.ObjectId;
+    user_id: mongodb.ObjectId;
+    activity_id: mongodb.ObjectId;
     registered_at: Date;
     checkedin_at: Date | null;
     updated_at: Date;

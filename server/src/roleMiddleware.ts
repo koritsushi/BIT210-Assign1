@@ -1,20 +1,18 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "./authMiddleware";   // import your extended type
 
-export const requireRole = (allowedRoles: ('Employee' | 'Admin')[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
-    // 1. Make sure user is authenticated first
-    if (!req.user) {
-        return res.status(401).json({ message: 'Authentication required' });
-    }
+export function requireRole(...roles: Array<'Employee' | 'Admin'>) {
+    return (req: AuthRequest, res: Response, next: NextFunction): void => {
+        if (!req.user) {
+            res.status(401).json({ message: 'Not authenticated' });
+            return;
+        }
 
-    // 2. Check if user's role is allowed
-    if (!allowedRoles.includes(req.user.role)) {
-        return res.status(403).json({ 
-            message: `Access denied. Required role: ${allowedRoles.join(' or ')}` 
-        });
-    }
+        if (!roles.includes(req.user.role)) {
+            res.status(403).json({ message: 'Insufficient permissions' });
+            return;
+        }
 
-    next(); // user has the right role
-  };
-};
+        next();
+    };
+}

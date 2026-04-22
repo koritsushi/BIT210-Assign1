@@ -12,4 +12,8 @@ export interface Activity {
     cutoff_datetime: Date;
     status: "Open" | "Full" | "Closed";
     qr_code: string;
+    location?: string;
+    description?: string;
+    ngo_name?: string;
+    participant_user_ids?: string[];
 }

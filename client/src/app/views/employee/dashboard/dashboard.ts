@@ -119,18 +119,19 @@ export class Dashboard implements OnInit {
 
     this.registrationService.createRegistration(newRegistration).subscribe({
       next: () => {
-        const updated = { ...activity, slots_taken: activity.slots_taken + 1 };
-        this.activityService.updateActivity(activity._id!, updated).subscribe({
-          next: () => {
-            this.registrationService.getRegistrations();
-            this.activityService.getActivities();
-            const title = `Registered an Activity`
-            const message = `Registered for "${activity.name}"`;
-            this.showToast(message, 'success');
-            this.sendNotification(userId, activity._id!, 'Registration', title, message);
-          },
-          error: () => this.showToast(`Failed to update slots for "${activity.name}"`, 'error')
-        });
+        this.activityService.updateActivity(activity._id!, {
+                slots_taken: activity.slots_taken + 1
+            } as any).subscribe({
+                next: () => {
+                    this.registrationService.getRegistrations();
+                    this.activityService.getActivities();
+                    const title = `Registered an Activity`;
+                    const message = `Registered for "${activity.name}"`;
+                    this.showToast(message, 'success');
+                    this.sendNotification(userId, activity._id!, 'Registration', title, message);
+                },
+                error: () => this.showToast(`Failed to update slots for "${activity.name}"`, 'error')
+            });
       },
       error: () => this.showToast(`Failed to register for "${activity.name}"`, 'error')
     });
@@ -145,21 +146,23 @@ export class Dashboard implements OnInit {
     if (!userId) return;
 
     this.registrationService.deleteRegistration(registration._id.toString()).subscribe({
-      next: () => {
-        const updated = { ...activity, slots_taken: Math.max(0, activity.slots_taken - 1) };
-        this.activityService.updateActivity(activity._id!, updated).subscribe({
-          next: () => {
-            this.registrationService.getRegistrations();
-            this.activityService.getActivities();
-            const title = `Cancelled Registration`
-            const message = `Cancelled registration for "${activity.name}"`;
-            this.showToast(message, 'info');
-            this.sendNotification(userId, activity._id!, 'Cancellation', title, message);
-          },
-          error: () => this.showToast(`Failed to update slots for "${activity.name}"`, 'error')
-        });
-      },
-      error: () => this.showToast(`Failed to cancel "${activity.name}"`, 'error')
+        next: () => {
+            // ⭐ FIX: Only send slots_taken, not the full spread object
+            this.activityService.updateActivity(activity._id!, {
+                slots_taken: Math.max(0, activity.slots_taken - 1)
+            } as any).subscribe({
+                next: () => {
+                    this.registrationService.getRegistrations();
+                    this.activityService.getActivities();
+                    const title = `Cancelled Registration`;
+                    const message = `Cancelled registration for "${activity.name}"`;
+                    this.showToast(message, 'info');
+                    this.sendNotification(userId, activity._id!, 'Cancellation', title, message);
+                },
+                error: () => this.showToast(`Failed to update slots for "${activity.name}"`, 'error')
+            });
+        },
+        error: () => this.showToast(`Failed to cancel "${activity.name}"`, 'error')
     });
   }
 
@@ -195,8 +198,12 @@ export class Dashboard implements OnInit {
     this.registrationService.deleteRegistration(registration._id.toString()).pipe(
       switchMap(() => forkJoin([
         this.registrationService.createRegistration(newRegistration),
-        this.activityService.updateActivity(from._id!, updatedFrom),
-        this.activityService.updateActivity(activity._id!, updatedTo),
+        this.activityService.updateActivity(from._id!, {
+                slots_taken: Math.max(0, from.slots_taken - 1)
+            } as any),
+            this.activityService.updateActivity(activity._id!, {
+                slots_taken: activity.slots_taken + 1
+            } as any),
       ]))
     ).subscribe({
       next: () => {
