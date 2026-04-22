@@ -20,6 +20,7 @@ import { User } from '../../../models/user.model';
 import { ActivityService } from '../../../services/activity.service';
 import { CheckinService } from '../../../services/checkin.service';
 import { NgoService } from '../../../services/ngo.service';
+import { QrEmailService } from '../../../services/qr-email.service';
 import { RegistrationService } from '../../../services/registration.servicce';
 import { UserService } from '../../../services/user.service';
 
@@ -39,6 +40,7 @@ interface AdminCheckInRecord {
 interface EmployeeQrPayload {
   userId?: string;
   email?: string;
+  activityId?: string;
 }
 
 export interface ActivityOption {
@@ -60,6 +62,7 @@ export class ActivityCheckIn implements OnInit, AfterViewInit, OnDestroy {
   private registrationService = inject(RegistrationService);
   private userService = inject(UserService);
   private ngoService = inject(NgoService);
+  private qrEmailService = inject(QrEmailService);
   private cdr = inject(ChangeDetectorRef);
 
   activities = this.activityService.activities$;
@@ -73,6 +76,9 @@ export class ActivityCheckIn implements OnInit, AfterViewInit, OnDestroy {
   cameraErrorMessage = '';
   scannerMessage = '';
   scannerMessageKind: ScannerMessageKind = 'info';
+  emailDispatchMessage = '';
+  emailDispatchMessageKind: ScannerMessageKind = 'info';
+  isSendingQrs = false;
   private qrScanner?: QrScanner;
   private refreshTimer?: ReturnType<typeof setInterval>;
   private isSubmitting = false;
@@ -153,8 +159,70 @@ export class ActivityCheckIn implements OnInit, AfterViewInit, OnDestroy {
     return Math.round((this.attendedCount / this.filteredRecords.length) * 100);
   }
 
+  get canSendQrCodes(): boolean {
+    if (!this.currentActivityId || this.isSendingQrs) {
+      return false;
+    }
+
+    return getEligibleEmployeesForActivity(
+      this.currentActivityId,
+      this.registrations(),
+      this.users(),
+    ).length > 0;
+  }
+
   generateReport(): void {
     this.showReport = true;
+  }
+
+  async sendQrCodes(): Promise<void> {
+    if (!this.currentActivityId) {
+      this.setEmailDispatchMessage('error', 'Please select an activity before sending QR codes.');
+      return;
+    }
+
+    const participants = getEligibleEmployeesForActivity(
+      this.currentActivityId,
+      this.registrations(),
+      this.users(),
+    );
+
+    if (!participants.length) {
+      this.setEmailDispatchMessage('error', 'No active registered employees found for this activity.');
+      return;
+    }
+
+    this.isSendingQrs = true;
+    this.setEmailDispatchMessage('info', 'Sending QR codes to registered employees...');
+    this.cdr.detectChanges();
+
+    const activityLabel = this.currentActivitySelection || 'Selected Activity';
+    const activityDate = this.reportDate;
+    let sent = 0;
+    let skipped = 0;
+
+    for (const employee of participants) {
+      try {
+        await this.qrEmailService.sendEmployeeQr({
+          employee,
+          activityId: this.currentActivityId,
+          activityLabel,
+          activityDate,
+        });
+        sent += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    this.isSendingQrs = false;
+    this.setEmailDispatchMessage(
+      sent
+        ? 'success'
+        : 'error',
+      `QR email dispatch finished. Sent ${sent}${skipped ? `, skipped ${skipped}` : ''}.`,
+    );
+    this.cdr.detectChanges();
   }
 
   selectActivity(activityId: string): void {
@@ -163,9 +231,10 @@ export class ActivityCheckIn implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.selectedActivityId = activityId;
+    this.emailDispatchMessage = '';
     this.setScannerMessage(
       'info',
-      this.currentActivityId ? 'Scanner ready. Scan an employee QR code.' : '',
+      '',
     );
   }
 
@@ -203,7 +272,7 @@ export class ActivityCheckIn implements OnInit, AfterViewInit, OnDestroy {
       this.cameraErrorMessage = '';
       this.setScannerMessage(
         'info',
-        this.currentActivityId ? 'Scanner ready. Scan an employee QR code.' : '',
+        '',
       );
       this.cdr.detectChanges();
     }).catch(() => {
@@ -229,6 +298,14 @@ export class ActivityCheckIn implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const employeePayload = parseEmployeeQrPayload(scannedText);
+    const qrActivityId = toText(employeePayload.activityId);
+    if (qrActivityId && qrActivityId !== this.currentActivityId) {
+      this.setScannerMessage('error', 'QR code belongs to a different activity.');
+      this.cdr.detectChanges();
+      this.resetScan();
+      return;
+    }
+
     const employee = resolveEmployeeFromQr(employeePayload, this.users());
 
     if (!employee?._id || employee.role !== 'Employee') {
@@ -275,6 +352,11 @@ export class ActivityCheckIn implements OnInit, AfterViewInit, OnDestroy {
   private setScannerMessage(kind: ScannerMessageKind, message: string): void {
     this.scannerMessageKind = kind;
     this.scannerMessage = message;
+  }
+
+  private setEmailDispatchMessage(kind: ScannerMessageKind, message: string): void {
+    this.emailDispatchMessageKind = kind;
+    this.emailDispatchMessage = message;
   }
 }
 
@@ -338,6 +420,41 @@ export function buildRecords(
       };
     })
     .filter((record): record is AdminCheckInRecord => !!record);
+}
+
+function getEligibleEmployeesForActivity(
+  activityId: string,
+  registrations: Registration[],
+  users: User[],
+): User[] {
+  const userMap = new Map<string, User>();
+  users.forEach((user) => {
+    if (user.role === 'Employee' && user._id) {
+      userMap.set(toText(user._id), user);
+    }
+  });
+
+  const seenUserIds = new Set<string>();
+  const employees: User[] = [];
+
+  registrations.forEach((registration) => {
+    if (toText(registration.activity_id) !== activityId || registration.status === 'Cancelled') {
+      return;
+    }
+
+    const userId = toText(registration.user_id);
+    if (!userId || seenUserIds.has(userId)) {
+      return;
+    }
+
+    const user = userMap.get(userId);
+    if (user?.email) {
+      seenUserIds.add(userId);
+      employees.push(user);
+    }
+  });
+
+  return employees;
 }
 
 export function getActivityMeta(activityId: string, activities: Activity[], ngos: Ngo[]): ActivityMeta {
@@ -416,8 +533,9 @@ function parseEmployeeQrPayload(rawValue: string): EmployeeQrPayload {
     const parsed = JSON.parse(text) as Record<string, unknown>;
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       return {
-        userId: pickText(parsed, ['userId', 'user_id', 'employeeId', 'employee_id', '_id', 'id']),
+        userId: pickText(parsed, ['u', 'userId', 'user_id', 'employeeId', 'employee_id', '_id', 'id']),
         email: pickText(parsed, ['email', 'employeeEmail', 'employee_email']),
+        activityId: pickText(parsed, ['a', 'activityId', 'activity_id']),
       };
     }
   } catch {
@@ -479,8 +597,8 @@ function extractScanText(result: unknown): string {
 }
 
 function calculateCenteredSquareScanRegion(video: HTMLVideoElement) {
-  const baseSize = Math.floor(Math.min(video.videoWidth, video.videoHeight) * 0.42);
-  const size = Math.max(180, Math.min(baseSize, 230));
+  const baseSize = Math.floor(Math.min(video.videoWidth, video.videoHeight) * 0.62);
+  const size = Math.max(220, Math.min(baseSize, 340));
   const x = Math.floor((video.videoWidth - size) / 2);
   const y = Math.floor((video.videoHeight - size) / 2);
 
@@ -489,8 +607,8 @@ function calculateCenteredSquareScanRegion(video: HTMLVideoElement) {
     y,
     width: size,
     height: size,
-    downScaledWidth: 320,
-    downScaledHeight: 320,
+    downScaledWidth: 480,
+    downScaledHeight: 480,
   };
 }
 

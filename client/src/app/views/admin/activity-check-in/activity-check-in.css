@@ -17,6 +17,14 @@
   margin-bottom: 12px;
 }
 
+.topbar-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .activity-list-bar {
   margin-bottom: 18px;
 }
@@ -49,6 +57,30 @@ h1 {
   border-radius: 14px;
   padding: 10px 18px;
   font-weight: 600;
+}
+
+.send-qr-btn {
+  border-radius: 14px;
+  padding: 10px 18px;
+  font-weight: 600;
+  border-color: #9cb4d8;
+  background: #edf4ff;
+  color: #1e4d87;
+}
+
+.send-qr-btn:hover:not(:disabled) {
+  background: #deebff;
+}
+
+.send-qr-btn:disabled {
+  background: #e5e7eb;
+  border-color: #cbd5e1;
+  color: #94a3b8;
+}
+
+.topbar-status {
+  margin: 0 auto 16px;
+  width: min(1240px, calc(100% - 32px));
 }
 
 .report-icon {
@@ -381,6 +413,20 @@ h3 {
 @media (max-width: 900px) {
   h1 {
     font-size: 32px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topbar-actions {
+    justify-content: stretch;
+  }
+
+  .topbar-actions .btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .activity-list-bar-inner {

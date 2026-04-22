@@ -1,13 +1,34 @@
 <section class="checkin-page">
   <div class="topbar">
     <h1>Check-In Monitor</h1>
-    <button class="btn primary report-btn" (click)="generateReport()">
-      <span class="report-icon" aria-hidden="true">
-        <span></span><span></span><span></span>
-      </span>
-      Generate Report
-    </button>
+    <div class="topbar-actions">
+      <button
+        class="btn send-qr-btn"
+        type="button"
+        [disabled]="!canSendQrCodes"
+        (click)="sendQrCodes()"
+      >
+        {{ isSendingQrs ? 'Sending...' : 'Send QR Codes' }}
+      </button>
+      <button class="btn primary report-btn" type="button" (click)="generateReport()">
+        <span class="report-icon" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+        Generate Report
+      </button>
+    </div>
   </div>
+
+  @if (emailDispatchMessage) {
+    <p
+      class="scanner-status topbar-status"
+      [class.info]="emailDispatchMessageKind === 'info'"
+      [class.success]="emailDispatchMessageKind === 'success'"
+      [class.error]="emailDispatchMessageKind === 'error'"
+    >
+      {{ emailDispatchMessage }}
+    </p>
+  }
 
   <div class="activity-list-bar content-width">
     <div class="activity-list-bar-inner card">
