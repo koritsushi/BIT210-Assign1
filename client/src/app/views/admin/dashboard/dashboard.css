@@ -32,6 +32,13 @@ h3 {
   color: #17355f;
 }
 
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .table-wrap {
   overflow-x: auto;
 }

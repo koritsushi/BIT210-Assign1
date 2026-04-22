@@ -36,7 +36,7 @@ export async function SchemaValidation(db: mongodb.Db) {
     const ngoSchema = {
         $jsonSchema: {
         bsonType: "object",
-        required: ["name", "description", "location", "service_type", "is_active"],
+        required: ["name", "location", "service_type", "is_active"],
         additionalProperties: false,
         properties: {
             _id: { bsonType: "objectId" },
@@ -69,7 +69,6 @@ export async function SchemaValidation(db: mongodb.Db) {
                 status: { enum: ["Open", "Full", "Closed"] },
                 qr_code: { bsonType: "string" },
                 location: { bsonType: "string" },
-                participant_user_ids: { bsonType: "array" },
             },
         },
     };

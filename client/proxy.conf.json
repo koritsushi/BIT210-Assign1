@@ -29,6 +29,11 @@
         "secure": false,
         "changeOrigin": true
     },
+    "/checkin": {
+        "target": "http://localhost:3000",
+        "secure": false,
+        "changeOrigin": true
+    },
     "/notification": {
         "target": "http://localhost:3000",
         "secure": false,

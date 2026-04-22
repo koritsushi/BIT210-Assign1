@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Activity } from '../../../models/activity.model';
 import { Ngo } from '../../../models/ngo.model';
 import { ActivityService } from '../../../services/activity.service';
@@ -9,7 +10,7 @@ import { NgoService } from '../../../services/ngo.service';
 import { RegistrationService } from '../../../services/registration.servicce';
 import { ActivityFormComponent } from './activity-form/activity-form';
 
-const DEFAULT_NGO_ID = '507f1f77bcf86cd799439011';
+const DEFAULT_NGO_ID = '';
 
 export interface ActivityFormValue {
   activityName: string;
@@ -44,6 +45,7 @@ export class Dashboard implements OnInit {
   private ngoService = inject(NgoService);
   private registrationService = inject(RegistrationService);
   private fb = inject(FormBuilder);
+  private router = inject(Router);
 
   activities = this.activityService.activities$;
   ngos = this.ngoService.ngos$;
@@ -102,6 +104,10 @@ export class Dashboard implements OnInit {
     this.showForm = false;
   }
 
+  goToNgoManagement(): void {
+    this.router.navigate(['/admin/ngos']);
+  }
+
   onFormValueChange(value: ActivityFormValue): void {
     this.form.patchValue(value, { emitEvent: false });
   }
@@ -136,12 +142,16 @@ export class Dashboard implements OnInit {
       return;
     }
 
-    if (raw.ngoName) {
-      const ngo = this.ngos().find((n) => n.name === raw.ngoName);
-      if (ngo?._id) {
-        this.editingNgoId = String(ngo._id);
-      }
+    const matchedNgo = raw.ngoName
+      ? this.ngos().find((ngo) => ngo.name === raw.ngoName)
+      : undefined;
+
+    if (!matchedNgo?._id) {
+      alert('Please select a valid NGO from the existing NGO list.');
+      return;
     }
+
+    this.editingNgoId = String(matchedNgo._id);
 
     const context: ActivityFormContext = {
       editingId: this.editingId,
@@ -322,7 +332,7 @@ function buildActivityPayload(raw: ActivityFormValue, context: ActivityFormConte
     const cutoffDate = parseDateTimeMY(raw.cutoff);
 
     const activity: any = {
-        ngo_id: context.editingNgoId || DEFAULT_NGO_ID,
+        ngo_id: context.editingNgoId,
         name: raw.activityName,
         date: activityDate,           // Date object
         start_time: startTime,        // number (UTC ms)
@@ -335,7 +345,6 @@ function buildActivityPayload(raw: ActivityFormValue, context: ActivityFormConte
         location: raw.location,
         description: raw.description || '',
         ngo_name: raw.ngoName || '',
-        participant_user_ids: [],
     };
 
     // Only include _id when editing, let MongoDB generate it on create

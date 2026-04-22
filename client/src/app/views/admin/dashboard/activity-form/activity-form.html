@@ -23,11 +23,16 @@
       NGO
       <select
         formControlName="ngoName"
+        [class.select-inactive]="isSelectedNgoInactive()"
         (change)="emitFormValueChange()"
       >
         <option value="">Select NGO</option>
         @for (ngo of ngos; track ngo._id) {
-          <option [value]="ngo.name">
+          <option
+            [value]="ngo.name"
+            [disabled]="isNgoInactive(ngo)"
+            [style.color]="isNgoInactive(ngo) ? '#9ca3af' : '#111827'"
+          >
             {{ ngo.name }}
           </option>
         }
