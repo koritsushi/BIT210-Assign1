@@ -40,13 +40,15 @@ export class Login {
     onLogin(): void {
         this.authService.login(this.email, this.password).subscribe({
             next: (res) => {
-                // If backend requires 2FA, it returns requires2FA flag
                 if (res.requires2FA) {
-                // Store temp token for 2FA verification
+                    if (!res.tempToken) {
+                        this.error = '2FA required but no token received.';
+                        return;
+                    }
                     localStorage.setItem('temp_token', res.tempToken);
                     localStorage.setItem('temp_email', this.email);
                     this.router.navigate(['/verify-2fa']);
-                    return ;
+                    return;
                 }
  
                 this.authService.saveToken(res.token);

@@ -188,13 +188,21 @@ authRouter.post("/login", async (req, res) => {
         }
 
         // No 2FA — return full JWT
-        const token = jwt.sign(
-            { _id: user._id, role: user.role },
+            const token = jwt.sign(
+            { _id: user._id.toString(), role: user.role },  // id not _id
             JWT_SECRET,
             { expiresIn: "1d" }
         );
 
-        res.status(200).json({ token, user });
+        res.status(200).json({ 
+            token, 
+            user: {
+                _id: user._id.toString(),
+                name: user.name,
+                email: user.email,
+                role: user.role
+                }
+        });
     } catch (error) {
         res.status(500).json({ message: "Login failed. :" + error});
     }
@@ -241,7 +249,7 @@ authRouter.post("/verify-2fa", async (req, res) => {
 
         // Issue full JWT
         const token = jwt.sign(
-            { _id: user._id, role: user.role },
+            { _id: user._id.toString(), role: user.role },
             JWT_SECRET,
             { expiresIn: "1d" }
         );

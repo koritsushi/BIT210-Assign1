@@ -6,7 +6,7 @@ if (!JWT_SECRET)
     throw new Error('FATAL ERROR: JWT_SECRET is not defined in environment variables!');
 
 interface JwtUser {
-    id: string;
+    _id: string;
     role: 'Employee' | 'Admin';
 }
 
@@ -19,6 +19,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
 
     // Return 401
     if (!header || !header.startsWith('Bearer ')) {
+        console.log(header);
         res.status(401).json({ message: 'Authorization header missing or malformed' });
         return;
     }
@@ -41,7 +42,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
         }
 
         // Validate decoded payload has expected shape
-        if (!decoded?.id || !decoded?.role) {
+        if (!decoded?._id || !decoded?.role) {
             res.status(401).json({ message: 'Token payload invalid' });
             return;
         }
