@@ -39,9 +39,9 @@ export class AuthService {
         );
     }
 
-    register(name: string, email: string, password: string) {
+    register(name: string, email: string, department: string, password: string) {
         return this.http.post<{ message: string }>(
-            `auth/register`, { name, email, password }
+            `auth/register`, { name, email, department, password }
         );
     }
 

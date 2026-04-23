@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { NotificationService } from '../../../services/notification.service';
 import { ActivityService } from '../../../services/activity.service';
 import { AuthService } from '../../../services/auth.services';
@@ -12,7 +12,7 @@ import { Notification } from '../../../models/notification.model';
   templateUrl: './notification.html',
   styleUrl: './notification.css',
 })
-export class NotificationComponent implements OnInit {
+export class NotificationComponent implements OnInit, OnDestroy {
     // --- Services via inject() ---
     private notificationService = inject(NotificationService);
     private activityService = inject(ActivityService);
@@ -25,36 +25,77 @@ export class NotificationComponent implements OnInit {
     // --- Local state ---
     notificationsCollapsed = false;
 
+    private pollTimer?: ReturnType<typeof setInterval>;
+    private readonly ACTIVE_POLL_MS = 30000;    // 30s when tab is active
+    private readonly INACTIVE_POLL_MS = 120000; // 2 min when tab is hidden
+
     ngOnInit(): void {
         this.notificationService.getNotifications();
         this.activityService.getActivities();
+        this.startPolling();
+
+        document.addEventListener('visibilitychange', this.onVisibilityChange);
     }
 
-getUserNotifications(): Notification[] {
-    const userId = this.authService.getUserId();
+    ngOnDestroy(): void {
+        this.stopPolling();
+        document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    }
 
-    if (!userId) return [];
+    private onVisibilityChange = (): void => {
+        if (document.visibilityState === 'visible') {
+            // Tab became active - fetch immediately then resume normal polling
+            this.notificationService.getNotifications();
+            this.stopPolling();
+            this.startPolling(this.ACTIVE_POLL_MS);
+        } else {
+            // Tab hidden - slow down polling
+            this.stopPolling();
+            this.startPolling(this.INACTIVE_POLL_MS);
+        }
+    };
 
-    return this.notifications().filter(n =>
-        !n.deleted_by?.includes(userId) &&
-        n.sent_at !== null
-    );
-}
+    private startPolling(intervalMs = this.ACTIVE_POLL_MS): void {
+        this.pollTimer = setInterval(() => {
+            // Only poll if tab is visible
+            if (document.visibilityState === 'visible') {
+                this.notificationService.getNotifications();
+            }
+        }, intervalMs);
+    }
 
-getActivityName(activityId: string | null): string {
-    if (!activityId) return 'General';
+    private stopPolling(): void {
+        if (this.pollTimer) {
+            clearInterval(this.pollTimer);
+            this.pollTimer = undefined;
+        }
+    }
 
-    const activity = this.activities().find((a: any) => {
-        return String(a._id) === String(activityId);
-    });
+    getUserNotifications(): Notification[] {
+        const userId = this.authService.getUserId();
 
-    if (!activity) return 'Unknown Activity';
+        if (!userId) return [];
 
-    return activity.name || `Activity ${activity.qr_code}`;
+        return this.notifications().filter(n =>
+            !n.deleted_by?.includes(userId) &&
+            n.sent_at !== null
+        );
+    }
+
+    getActivityName(activityId: string | null): string {
+        if (!activityId) return 'General';
+
+        const activity = this.activities().find((a: any) => {
+            return String(a._id) === String(activityId);
+        });
+
+        if (!activity) return 'Unknown Activity';
+
+        return activity.name || `Activity ${activity.qr_code}`;
     }
 
         // --- Soft delete all visible notifications for the user ---
-        clearNotifications() {
+    clearNotifications() {
             const userId = this.authService.getUserId();
         if (!userId) return;
 

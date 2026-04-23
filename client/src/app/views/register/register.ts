@@ -22,6 +22,7 @@ interface Toast {
 export class Register {
     name = '';
     email = '';
+    department = '';
     password = '';
     confirmPassword = '';
     showPassword = false;
@@ -66,6 +67,8 @@ export class Register {
             return 'Name is required.';
         if (!this.email.trim())
             return 'Email is required.';
+        if (!this.department.trim())
+            return 'Email is required.';
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(this.email))
             return 'Please enter a valid email address.';
@@ -87,11 +90,12 @@ export class Register {
             return;
         }
 
-        this.authService.register(this.name, this.email, this.password).subscribe({
+        this.authService.register(this.name, this.email, this.department, this.password).subscribe({
             next: () => {
                 this.showToast('Registration successful! Please check your email to verify your account.', 'success');
                 this.name = '';
                 this.email = '';
+                this.department = '';
                 this.password = '';
                 this.confirmPassword = '';
                 // Delay navigation so user sees the success toast
