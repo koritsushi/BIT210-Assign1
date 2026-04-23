@@ -40,7 +40,7 @@ async function sendEmail(to: string, subject: string, html: string) {
 // ─────────────────────────────────────────────
 authRouter.post("/register", async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, department, password } = req.body;
 
         // Validate fields
         if (!name || !email || !password) {
@@ -74,7 +74,7 @@ authRouter.post("/register", async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            department: "",
+            department,
             role: "Employee" as const,
             is_verified: false,
             verify_token,

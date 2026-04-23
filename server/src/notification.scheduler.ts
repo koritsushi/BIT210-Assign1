@@ -28,7 +28,8 @@ async function createNotification(data: {
     message: string;
     reminder_label: string;
 }) {
-    await collections.notifications?.insertOne({
+    try {
+        await collections.notifications?.insertOne({
         user_id: data.user_id,
         activity_id: data.activity_id,
         type: data.type,
@@ -43,6 +44,14 @@ async function createNotification(data: {
         repeat_interval_minutes: null,
         repeat_until: null,
     });
+    } catch (error: any) {
+        //Ignore duplicate key errors - notification already exists
+        if (error?.code === 11000) {
+            console.log(`[createNotification] Duplicate skipped for user=${data.user_id} activity=${data.activity_id} label=${data.reminder_label}`);
+            return;
+        }
+        throw error;
+    }
 }
 
 function getDaysUntil(activityDate: Date): number {
@@ -65,7 +74,7 @@ function getDaysUntil(activityDate: Date): number {
 
 export function startNotificationScheduler() {
     // Activity reminders: run every hour
-    cron.schedule("* * * * *", async () => {
+    cron.schedule("*/30 * * * * *", async () => {
         try {
             const now = new Date();
 
@@ -182,7 +191,7 @@ export function startNotificationScheduler() {
     });
 
     // Scheduled notifications: run every minute
-    cron.schedule("*/5 * * * * *", async () => {
+    cron.schedule("0 * * * *", async () => {
         try {
             const now = new Date();
 

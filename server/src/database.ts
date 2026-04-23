@@ -38,6 +38,21 @@ export async function connectDB(uri: string) {
     collections.registrations = registrationsCollection;
     collections.ngos = ngosCollection;
     collections.notifications = notificationCollection;
+
+    await notificationCollection.createIndex(
+        {
+            activity_id: 1,
+            user_id: 1,
+            reminder_label: 1
+        },
+        {
+            unique: true,
+            partialFilterExpression: {
+                reminder_label: { $type: "string" }  // only apply to docs that have reminder_label
+            },
+            name: "unique_reminder_per_user_activity"
+        }
+    );
 }
 
 export async function connectMockDB(uri: string) {

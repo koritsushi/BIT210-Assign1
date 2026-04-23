@@ -7,6 +7,14 @@ import dns from "node:dns/promises";
 import rateLimit from 'express-rate-limit';
 
 dotenv.config();
+const { ATLAS_URI } = process.env;
+//live database
+if (!ATLAS_URI) {
+     console.error(
+        "No .env has been defined in config.env"
+    );
+   process.exit(1);
+}
 const app = express();
 dns.setServers(["1.1.1.1"]);
 app.use(cors({
@@ -16,14 +24,6 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(helmet());
-const { ATLAS_URI } = process.env;
-//live database
-if (!ATLAS_URI) {
-     console.error(
-        "No .env has been defined in config.env"
-    );
-   process.exit(1);
-}
 
 import { userRouter } from "./routes/user.routes";
 import { activityRouter } from "./routes/activity.routes";
